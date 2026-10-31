@@ -1,0 +1,128 @@
+/* Shared visual finish. No changes to climate calculations or selection behavior. */
+:root {
+  --interaction-duration: 170ms;
+  --interaction-ease: cubic-bezier(.2, .65, .3, 1);
+  --card-shadow: 0 8px 22px #173f3510;
+}
+html { scrollbar-gutter: stable; }
+
+/* A tighter rhythm keeps the second section connected to the hero. */
+.home .hero { padding: 48px 0 40px; }
+.home .discovery { padding: 30px 0 28px; }
+.home .section-heading { margin-bottom: 24px; }
+.home .development-note { padding: 18px 0 32px; }
+.feature-card { display: flex; flex-direction: column; }
+.feature-card .text-link { margin-top: auto; padding-top: 8px; }
+.feature-card .card-top { margin-bottom: 24px; }
+
+/* Transforms stay small and reserved for primary interactive affordances. */
+.feature-card, .game-card, .history-period {
+  transition: transform var(--interaction-duration) var(--interaction-ease),
+    box-shadow var(--interaction-duration) ease, border-color var(--interaction-duration) ease,
+    background-color var(--interaction-duration) ease;
+}
+.card-top > span, .button > span, .header nav > a > span:last-child, .source-link strong > span {
+  display: inline-block;
+  transition: transform var(--interaction-duration) var(--interaction-ease);
+}
+.button, .menu-button, .header nav > a, a.text-link, .source-link, footer > a,
+.interactive-explorer button, .interactive-explorer summary, .interactive-explorer select,
+.interactive-explorer input[type=month] {
+  transition: background-color var(--interaction-duration) ease, color var(--interaction-duration) ease,
+    border-color var(--interaction-duration) ease, box-shadow var(--interaction-duration) ease;
+}
+.feature-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow);
+  background: #f0f4e9;
+  border-color: #8fa784;
+}
+.feature-card:focus-visible .card-top > span,
+.button:focus-visible > span, .source-link:focus-visible strong > span { transform: translate(2px, -2px); }
+.button:focus-visible { background: #2d5846; box-shadow: 0 4px 12px #173f351c; }
+a.text-link:focus-visible, footer > a:focus-visible { color: #315d45; text-decoration-thickness: 2px; }
+.source-link:focus-visible { background: #edf2e7; }
+.game-card:focus-visible { outline: 3px solid #b25d28; outline-offset: 4px; border-color: #9ab18e; box-shadow: var(--card-shadow); background: #f4f6ee; }
+.interactive-explorer button:focus-visible:not(:disabled), .menu-button:focus-visible { box-shadow: 0 0 0 3px #c8d6bd; }
+.interactive-explorer select:focus-visible, .interactive-explorer input[type=month]:focus-visible { border-color: #456e53; }
+
+@media (hover: hover) {
+  .feature-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow); background: #f0f4e9; border-color: #8fa784; }
+  .feature-card:hover .card-top > span, .button:hover > span, .source-link:hover strong > span { transform: translate(2px, -2px); }
+  .button:hover { box-shadow: 0 4px 12px #173f351c; }
+  .game-card:hover { border-color: #9ab18e; box-shadow: var(--card-shadow); background: #f4f6ee; }
+  .history-period:hover { background: #f7f9f1; border-color: #aabca0; }
+  .header nav > a:hover > span:last-child { transform: translateX(2px); }
+  .source-link:hover { background: #edf2e7; }
+  a.text-link:hover, footer > a:hover { color: #315d45; text-decoration-thickness: 2px; }
+  .interactive-explorer select:hover, .interactive-explorer input[type=month]:hover { border-color: #698060; }
+  .interactive-explorer summary:hover { background: #edf2e7; }
+}
+
+/* Disclosure menu: dimmed backdrop, clear active route and contained scrolling. */
+.menu-backdrop { position: fixed; inset: 0; z-index: 9; background: #142e2742; animation: backdrop-in 140ms ease-out; }
+.header.menu-open { box-shadow: 0 5px 18px #173f3512; }
+.header nav {
+  z-index: 1;
+  padding: 22px;
+  box-shadow: 0 20px 50px #102b3530, 0 2px 6px #173f3512;
+  max-height: calc(100dvh - 102px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.header nav:not([hidden]) { animation: menu-in 150ms var(--interaction-ease); }
+.header nav > .eyebrow { display: block; margin: 0 8px 12px; }
+.header nav > a { border: 1px solid transparent; border-radius: 6px; padding: 13px 10px; margin-top: 4px; }
+.header nav > a.active { color: #173f35; background: #e4ecda; border-color: #c0d0b4; box-shadow: inset 3px 0 #456e53; font-weight: 650; }
+.header nav > a.active .nav-number { color: #456e53; }
+.header nav > a:focus-visible { background: #edf2e7; }
+.header nav > a:focus-visible > span:last-child { transform: translateX(2px); }
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Pending modules remain informational, with no play-button affordance. */
+.game-grid { grid-auto-rows: 1fr; gap: 20px; }
+.game-card { min-height: 275px; border-radius: 10px; }
+.game-card .game-symbol { width: 54px; height: 54px; margin-bottom: 22px; border: 1px solid #d6e0cb; }
+.game-card h2 { margin-bottom: 12px; }
+.game-card p { margin-bottom: 22px; }
+.game-card .badge { margin-top: auto; }
+.history-list { display: grid; gap: 14px; border-top: 0; }
+.history-period { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 22px; padding: 26px; border: 1px solid var(--line); border-radius: 10px; background: #fcfcf7; }
+.history-period .period-number { color: #536d4c; font-variant-numeric: tabular-nums; border-top: 2px solid #b7cba3; }
+.history-period h2 { font-size: 1.65rem; }
+.history-period .topic-tags span { background: #f3f6ed; }
+.history-period > .badge { margin-top: 4px; }
+
+/* Refine only spacing and typography in the existing explorer. */
+.interactive-explorer .explorer-experience { margin-bottom: 28px; box-shadow: 0 3px 12px #173f3506; }
+.interactive-explorer .climate-chart { margin-bottom: 28px; border-radius: 12px; }
+.interactive-explorer .explorer-analysis { gap: 24px; }
+.interactive-explorer .explorer-analysis > .panel { border-radius: 12px; }
+.interactive-explorer .world-reading > span, .interactive-explorer .selected-date { text-transform: none; }
+.interactive-explorer .color-ticks { font-size: .78rem; margin-top: 8px; color: #3a5144; font-variant-numeric: tabular-nums; }
+.interactive-explorer .world-credit { font-size: .72rem; margin-top: 10px; }
+.interactive-explorer .climate-timeline .section-heading { margin-bottom: 20px; }
+.interactive-explorer .climate-chart .panel-heading h2 { font-size: 1.25rem; }
+.interactive-explorer .climate-chart .panel-heading { margin-bottom: 12px; }
+.interactive-explorer .chart-readout { background: #eef3e6; padding: 10px 14px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.interactive-explorer .comparison-inputs { margin-bottom: 12px; }
+.interactive-explorer .data-provenance { margin-top: 28px; }
+
+@media (min-width: 1500px) { .home .hero { padding: 62px 0 48px; } }
+@media (max-width: 900px) { .home .hero { padding: 36px 0 32px; } }
+@media (max-width: 640px) {
+  .home .hero { padding: 30px 0; gap: 28px; }
+  .home .discovery { padding: 26px 0 22px; }
+  .header nav { max-height: calc(100dvh - 88px); padding: 18px; }
+  .history-period { grid-template-columns: 26px minmax(0, 1fr); gap: 16px; padding: 22px 18px; }
+  .history-period > div { min-width: 0; }
+  .history-period > .badge { grid-column: 2; margin: 0; justify-self: start; }
+  .game-card { min-height: 250px; }
+  .interactive-explorer .explorer-experience, .interactive-explorer .climate-chart { margin-bottom: 20px; }
+  .interactive-explorer .explorer-analysis { gap: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-backdrop, .header nav:not([hidden]) { animation: none; }
+  .feature-card, .card-top > span, .button > span, .source-link strong > span, .header nav > a > span:last-child { transform: none !important; }
+}
