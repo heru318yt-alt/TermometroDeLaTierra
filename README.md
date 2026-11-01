@@ -22,7 +22,7 @@ npm run data:update # Descargar y validar la serie oficial completa de NASA
 
 ## Tecnologías y estructura
 
-React + TypeScript, Vite y React Router. CSS propio, fuentes del sistema y gráficos SVG. Contornos de Natural Earth de dominio público almacenados localmente, sin peticiones de imágenes en ejecución. No se añadieron dependencias para el explorador. Vitest, Testing Library y jsdom se usan únicamente en desarrollo para verificar las interacciones.
+React + TypeScript, Vite y React Router. CSS propio, fuentes del sistema, una esfera interactiva dibujada en canvas y gráficos SVG. Contornos de Natural Earth de dominio público almacenados localmente, sin peticiones de imágenes en ejecución. No se añadieron dependencias para el explorador. Vitest, Testing Library y jsdom se usan únicamente en desarrollo para verificar las interacciones.
 
 ```text
 src/
@@ -42,8 +42,8 @@ src/
     games/GamesPage.tsx       Alojamiento del build Unity WebGL y temas
     about/AboutPage.tsx       Objetivos, estado y fuentes
   styles.css                  Estilos compartidos y reglas responsive
-unity/
-  TermometroMinijuegos/       Proyecto Unity 6, escena, tooling y C#
+unity/README.md               Mapa y flujo de trabajo de la parte Unity
+unity/TermometroMinijuegos/    Proyecto Unity 6, escena, tooling y C#
 public/unity-minijuegos/       index.html + archivos del build Unity WebGL
 ```
 
@@ -52,7 +52,7 @@ public/unity-minijuegos/       index.html + archivos del build Unity WebGL
 | Ruta | Contenido |
 | --- | --- |
 | `/` | Inicio |
-| `/explorador` | Mapa, indicador, gráfico, línea de tiempo e información contextual |
+| `/explorador` | Globo giratorio, indicador, gráfico, línea de tiempo, comparación e información contextual |
 | `/historia` | 1970–1979, 1980–1989, 1990–1999, 2000–2009, 2010–2019 y 2020–2025 |
 | `/minijuegos` | Energía, industria, transporte, bosques y agricultura |
 | `/acerca` | Proyecto y fuentes |
@@ -62,9 +62,9 @@ BrowserRouter permite enlaces y navegación real con historial. Al desplegar en 
 
 ## Proyecto Unity de minijuegos
 
-La ruta `/minijuegos` aloja el build WebGL de Unity en un iframe adaptable; el menú de juego permite seleccionar energía, industria, transporte, bosques o agricultura. El proyecto Unity está en `unity/TermometroMinijuegos`; sus instrucciones de apertura y compilación están en su README. Para actualizar la versión web, desde Unity selecciona **Termómetro → Compilar WebGL para la web**, que genera `public/unity-minijuegos/`, y luego ejecuta `npm run build`.
+La ruta `/minijuegos` aloja el build WebGL de Unity en un iframe adaptable. Unity incluye un mapa de entrada y cinco escenas de misión 2D (energía, industria, transporte, bosques y agricultura), personaje original animado, interacciones distintas por escena, música sintetizada y efectos con controles independientes. El proyecto está en `unity/TermometroMinijuegos`; consulta [la guía de Unity](unity/README.md). Para actualizar la versión web, usa **Termómetro → Compilar WebGL para la web**; se generan todas las escenas en `public/unity-minijuegos/`.
 
-El explorador dispone de una representación mundial, gráfico SVG, reproducción y línea de tiempo sincronizados, comparaciones y procedencia de los datos. No hay backend, autenticación, base de datos, mediciones simuladas ni audio. Los minijuegos son simulaciones didácticas; sus indicadores no representan factores de emisión medidos ni datos NASA GISTEMP.
+El explorador dispone de una esfera giratoria con el indicador global, gráfico SVG, reproducción y línea de tiempo sincronizados, comparación junto al planeta y procedencia de los datos. No hay backend, autenticación ni base de datos. El explorador no reproduce audio; los minijuegos incluidos en Unity generan música y efectos originales localmente. Sus indicadores son simulaciones didácticas, no factores de emisión medidos ni datos NASA GISTEMP.
 
 ## Explorador interactivo (etapa 3)
 
@@ -83,13 +83,13 @@ Se abre en el último mes de `data.lastDate` y permite recorrer desde **enero de
 | `ExplorerErrorBoundary.tsx` | Mensaje de error y recarga ante un fallo del explorador |
 | `explorer.css` | Estilos específicos y responsive, conservando la identidad anterior |
 
-`ExplorerPage.tsx` compone estos módulos; el panel anterior `ClimateSummaryPanel` se conserva bajo «Fuente y última actualización», separado de la fecha seleccionada. El gráfico se carga mediante `React.lazy` y `Suspense`, con estado de carga real; el JSON y los contornos ya son locales, por lo que no se simula una carga de NASA. La frontera de error contiene fallos de renderizado o de carga del gráfico y deja la navegación disponible.
+`ExplorerPage.tsx` compone estos módulos con el globo a la izquierda y los controles de tiempo/comparación a su lado; el panel anterior `ClimateSummaryPanel` se conserva bajo «Fuente y última actualización», separado de la fecha seleccionada. El gráfico se carga mediante `React.lazy` y `Suspense`, con estado de carga real; el JSON y los contornos ya son locales, por lo que no se simula una carga de NASA. La frontera de error contiene fallos de renderizado o de carga del gráfico y deja la navegación disponible.
 
 ### Color y geografía
 
 Escala cromática fija de −1 a +2 °C: azul para anomalías negativas, neutro en cero y tonos cálidos para positivas. Los extremos de la leyenda indican saturación (≤ −1, ≥ +2); el valor numérico siempre conserva la anomalía real. El color uniforme del océano/fondo representa **un indicador global**; la capa oscura de continentes es una referencia constante, no una variable climática regional.
 
-Los contornos se derivaron de Natural Earth 1:110m, dominio público. Procedencia y transformación en `src/assets/README.md`; geometría local en `src/assets/world-land.json`. Proyección ilustrativa, no apta para análisis de áreas o distancias. `WorldClimateVisualizer` ofrece una propiedad `spatialLayer` para una futura capa SVG separada que deberá contar con datos espaciales reales, leyenda y procedencia propias.
+Los contornos se derivaron de Natural Earth 1:110m, dominio público. Procedencia y transformación en `src/assets/README.md`; geometría local en `src/assets/world-land.json`. La esfera rasteriza esos contornos para mostrar una referencia giratoria; la proyección de origen es ilustrativa, no apta para análisis de áreas o distancias. El fondo completo del océano representa un solo valor global y no una lectura regional.
 
 ### Reproducción y accesibilidad
 

@@ -17,9 +17,9 @@ describe('Recorrido de la aplicación', () => {
       const view = setup('/historia')
       await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
       expect(document.body.style.overflow).toBe('hidden')
-      expect(within(screen.getByRole('navigation')).getByRole('link', { name: /Historia/ }).getAttribute('aria-current')).toBe('page')
+      expect(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: /Historia/ }).getAttribute('aria-current')).toBe('page')
       await userEvent.click(document.querySelector('.menu-backdrop')!)
-      expect(screen.queryByRole('navigation')).toBeNull()
+      expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
       expect(document.body.style.overflow).toBe('auto')
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Abrir menú' }))
       await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
@@ -29,7 +29,7 @@ describe('Recorrido de la aplicación', () => {
   })
   it.each([
     ['/', 'El clima cambia.'], ['/explorador', 'Explorador climático'],
-    ['/historia', 'El clima, a través del tiempo.'], ['/minijuegos', 'Aprender también será jugar.'],
+    ['/historia', 'El clima, a través del tiempo.'], ['/minijuegos', 'Aprender también es jugar.'],
     ['/acerca', 'Comprender para participar.'], ['/ruta-inexistente', 'Página no encontrada'],
   ])('resuelve la ruta %s', (path, title) => {
     setup(path)
@@ -44,17 +44,17 @@ describe('Recorrido de la aplicación', () => {
   it('abre, cierra con Escape y devuelve el foco al botón', async () => {
     setup()
     await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
-    expect(screen.getByRole('navigation')).toBeDefined()
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeDefined()
     await userEvent.keyboard('{Escape}')
-    expect(screen.queryByRole('navigation')).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Abrir menú' }))
   })
   it('navega por todos los enlaces del menú y lo cierra al seleccionar', async () => {
     setup()
     for (const label of ['Explorador climático', 'Historia', 'Minijuegos', 'Acerca del proyecto', 'Inicio']) {
       await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
-      await userEvent.click(within(screen.getByRole('navigation')).getByRole('link', { name: new RegExp(label) }))
-      expect(screen.queryByRole('navigation')).toBeNull()
+      await userEvent.click(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: new RegExp(label) }))
+      expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
       expect(document.title).toContain(label)
     }
   })
@@ -62,17 +62,23 @@ describe('Recorrido de la aplicación', () => {
     setup()
     await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await userEvent.click(screen.getByRole('button', { name: 'Cerrar menú' }))
-    expect(screen.queryByRole('navigation')).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
     await userEvent.click(screen.getByRole('heading', { level: 1 }))
-    expect(screen.queryByRole('navigation')).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
   })
-  it('presenta seis períodos y carga la experiencia Unity con cinco temas disponibles', () => {
+  it('recorre una historia documentada y abre directamente uno de los cinco mundos Unity', async () => {
     const view = setup('/historia')
-    expect(screen.getAllByText('Contenido pendiente')).toHaveLength(6)
+    expect(screen.getByRole('heading', { name: 'Seis décadas de preguntas y acuerdos' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /EPA · Orígenes de la agencia/ }).getAttribute('href')).toContain('epa.gov')
+    await userEvent.click(screen.getByRole('button', { name: /2010–2019/ }))
+    expect(screen.getByRole('heading', { name: 'Se adopta el Acuerdo de París' })).toBeTruthy()
     view.unmount()
     setup('/minijuegos')
-    expect(screen.getAllByText('Disponible en Unity')).toHaveLength(5)
-    expect(screen.getByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)').getAttribute('src')).toContain('unity-minijuegos/index.html')
+    expect(screen.getAllByRole('button', { name: /Entrar al mundo/ })).toHaveLength(5)
+    const frame = screen.getByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)')
+    expect(frame.getAttribute('src')).toContain('unity-minijuegos/index.html')
+    await userEvent.click(screen.getAllByRole('button', { name: /Entrar al mundo/ })[0])
+    expect(screen.getByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)').getAttribute('src')).toContain('?world=energia')
   })
 })

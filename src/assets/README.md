@@ -5,11 +5,10 @@ https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne
 
 Natural Earth vector data are public domain: https://www.naturalearthdata.com/about/terms-of-use/
 
-Illustrative projection (not an analytical geographic projection):
+Illustrative source projection (not an analytical geographic projection):
 `x = 360 + longitude / 180 * 345 * sqrt(1 - (latitude / 110)^2)`;
-`y = 190 - latitude / 90 * 165`. Coordinates rounded to 0.1 SVG unit.
-Polygon rings are closed and rendered with even-odd fill. No political boundaries, regional climate values, or external requests at runtime.
+`y = 190 - latitude / 90 * 165`. Coordinates are rounded to 0.1 SVG unit. Polygon rings are closed and rendered with even-odd fill.
 
-The ocean uses a uniform global anomaly color. Land outlines are a constant decorative overlay. A future spatial layer must have its own validated geographic dataset; the global CSV cannot supply it.
+`InteractiveGlobe.tsx` rasterizes the local paths once, samples them back into a longitude/latitude mask using the inverse of this projection, then shades them on a rotatable sphere. The ocean fill is one uniform global anomaly for the selected date. Land outlines and graticule are visual references only; there are no political boundaries or regional climate values, and no external requests at runtime.
 
-The visualizer's ocean contour and SVG clip share the same projection envelope (347 × 167 instead of 345 × 165, giving the original land paths a 2-unit margin). Land geometry remains unchanged. The graticule and any future spatial layer use this same clip, with a unique React `useId` per mounted visualizer.
+The CSV contains only global anomaly data. Any future regional climate layer needs its own validated geographic data, scale, legend, and source.

@@ -6,12 +6,13 @@ Proyecto independiente de Unity 6 para los cinco minijuegos educativos. La web c
 
 1. En Unity Hub, añade la carpeta `unity/TermometroMinijuegos`.
 2. Ábrela con Unity **6000.3.14f1** o una versión Unity 6 compatible. El Package Manager resolverá `com.unity.ugui`.
-3. Abre `Assets/Scenes/Minijuegos.unity`. La escena y el EventSystem/interfaz se generan automáticamente al iniciar.
-4. Para regenerar la escena: menú **Termómetro → Crear escena de minijuegos**.
+3. Abre `Assets/Scenes/Inicio.unity` para ver el mapa de aventuras. Cada misión tiene su propia escena y su interfaz se crea al iniciar.
+4. Las seis escenas incluidas en el build están en `Assets/Scenes/`: `Inicio`, `Energia`, `Industria`, `Movilidad`, `Bosques` y `Agricultura`.
+5. Para reconstruir las seis escenas: menú **Termómetro → Crear todas las escenas 2D**. La escena `Minijuegos.unity`, si aparece en el proyecto, es un prototipo anterior y no forma parte del build.
 
 ## Crear/actualizar el juego en la web
 
-Instala el módulo **WebGL Build Support** para la versión de Unity usada. Luego, desde Unity, selecciona **Termómetro → Compilar WebGL para la web**. El build se guarda en `../../public/unity-minijuegos`, ruta relativa al proyecto Unity, con `index.html`, `Build/` y `TemplateData/`. La página `/minijuegos` carga el juego desde `index.html`.
+Instala el módulo **WebGL Build Support** para la versión de Unity usada. Luego, desde Unity, selecciona **Termómetro → Compilar WebGL para la web**. El build se guarda en `../../public/unity-minijuegos`, ruta relativa al proyecto Unity. Contiene `index.html`, `style.css` y `Build/`; la página `/minijuegos` lo carga en un iframe adaptable.
 
 También puede ejecutarse con Unity en modo batch:
 
@@ -27,7 +28,7 @@ También puede ejecutarse con Unity en modo batch:
 
 - Energía: continuidad, eficiencia y transición de la matriz.
 - Industria: cemento, acero, materiales y procesos.
-- Transporte: movilidad de personas y de carga.
+- Transporte: viajes cotidianos con bus, bicicleta, caminata y auto compartido.
 - Bosques: uso del suelo, restauración y comunidades.
 - Agricultura: metano, nitrógeno, residuos y resiliencia alimentaria.
 

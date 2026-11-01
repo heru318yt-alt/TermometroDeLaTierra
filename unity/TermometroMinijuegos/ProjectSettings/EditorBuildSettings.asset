@@ -6,7 +6,22 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Minijuegos.unity
-    guid: 60c8e11123f5e894c81afe5d12a0e5ca
+    path: Assets/Scenes/Inicio.unity
+    guid: 031efdaae3e78fb4fa9dd547a009366e
+  - enabled: 1
+    path: Assets/Scenes/Energia.unity
+    guid: d5301346a92068c439c6c7d81afc4812
+  - enabled: 1
+    path: Assets/Scenes/Industria.unity
+    guid: 85207909dde3ef542a7ffc5c429f8e42
+  - enabled: 1
+    path: Assets/Scenes/Movilidad.unity
+    guid: 99b71e75481d41f40bacb01cb0a90e7a
+  - enabled: 1
+    path: Assets/Scenes/Bosques.unity
+    guid: 9660c7e2a9923964dbb23df32a1d8663
+  - enabled: 1
+    path: Assets/Scenes/Agricultura.unity
+    guid: 3d793df491c004c418e12a8308f96496
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

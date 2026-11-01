@@ -14,9 +14,12 @@ export function ExplorerPage() {
   return <div className="page-width inner-page interactive-explorer">
     <PageIntro number="01" title="Explorador climático">Un planeta, muchas fechas. Recorre la señal global del clima desde 1926 y descubre cómo cambia a través del tiempo.</PageIntro>
     <ExplorerErrorBoundary><ExplorerProvider>
-      <div className="explorer-experience"><WorldClimateVisualizer /><ClimateTimeline /></div>
+      <div className="explorer-experience earth-dashboard">
+        <WorldClimateVisualizer />
+        <div className="earth-tools"><ClimateTimeline /><ClimatePeriodComparison /></div>
+      </div>
       <Suspense fallback={<section className="panel" role="status">Cargando el gráfico climático…</section>}><ClimateChart /></Suspense>
-      <div className="explorer-analysis"><ClimatePeriodComparison /><ClimateHistoricalContext /></div>
+      <ClimateHistoricalContext />
       <details className="data-provenance"><summary>Fuente y última actualización del conjunto NASA</summary><ClimateSummaryPanel /></details>
     </ExplorerProvider></ExplorerErrorBoundary>
   </div>

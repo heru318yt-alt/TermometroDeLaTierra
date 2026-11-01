@@ -50,7 +50,7 @@ describe('Selección y sincronización del explorador', () => {
     fireEvent.change(screen.getByLabelText('Año'), { target: { value: '1980' } })
     fireEvent.change(screen.getByLabelText('Mes'), { target: { value: '7' } })
     expectSynchronized({ year: 1980, month: 7 }, 'monthly')
-    expect(screen.getByRole('heading', { name: 'Período 1980–1989' })).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'La ciencia climática se coordina' })).toBeDefined()
     fireEvent.change(screen.getByRole('slider'), { target: { value: toIndex(last) } })
     expectSynchronized(last, 'monthly')
   })
