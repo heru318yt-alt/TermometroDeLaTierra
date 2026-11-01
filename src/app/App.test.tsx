@@ -67,7 +67,7 @@ describe('Recorrido de la aplicación', () => {
     await userEvent.click(screen.getByRole('heading', { level: 1 }))
     expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
   })
-  it('recorre una historia documentada y abre directamente uno de los cinco mundos Unity', async () => {
+  it('recorre una historia documentada y abre cada aventura sin un segundo selector Unity', async () => {
     const view = setup('/historia')
     expect(screen.getByRole('heading', { name: 'Seis décadas de preguntas y acuerdos' })).toBeTruthy()
     expect(screen.getByRole('link', { name: /EPA · Orígenes de la agencia/ }).getAttribute('href')).toContain('epa.gov')
@@ -75,10 +75,38 @@ describe('Recorrido de la aplicación', () => {
     expect(screen.getByRole('heading', { name: 'Se adopta el Acuerdo de París' })).toBeTruthy()
     view.unmount()
     setup('/minijuegos')
-    expect(screen.getAllByRole('button', { name: /Entrar al mundo/ })).toHaveLength(5)
-    const frame = screen.getByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)')
-    expect(frame.getAttribute('src')).toContain('unity-minijuegos/index.html')
-    await userEvent.click(screen.getAllByRole('button', { name: /Entrar al mundo/ })[0])
-    expect(screen.getByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)').getAttribute('src')).toContain('?world=energia')
+    const worlds = [
+      ['Energía viva', 'energia'], ['Fábrica circular', 'industria'], ['Rutas que respiran', 'transporte'],
+      ['Bosque guardián', 'bosques'], ['La finca del futuro', 'agricultura'],
+    ]
+    expect(screen.getAllByRole('button', { name: /^Jugar / })).toHaveLength(5)
+    expect(screen.queryByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)')).toBeNull()
+    for (const [title, id] of worlds) {
+      await userEvent.click(screen.getByRole('button', { name: `Jugar ${title}` }))
+      const frame = screen.getByTitle(`Minijuego ${title} en Unity WebGL`)
+      const src = frame.getAttribute('src')!
+      expect(src).toContain(`world=${id}`)
+      expect(src).toContain('return=')
+      expect(screen.getByRole('heading', { name: `Juega: ${title}` })).toBeTruthy()
+      await userEvent.click(screen.getByRole('button', { name: 'Volver a los mundos' }))
+      expect(screen.queryByTitle(`Minijuego ${title} en Unity WebGL`)).toBeNull()
+      expect(screen.queryByRole('heading', { name: 'Elige un mundo para empezar' })).toBeTruthy()
+    }
+  })
+  it('restaura la aventura al abrir o recargar un enlace individual', () => {
+    setup('/minijuegos?world=bosques')
+    const frame = screen.getByTitle('Minijuego Bosque guardián en Unity WebGL')
+    expect(frame.getAttribute('src')).toContain('world=bosques')
+    expect(screen.getByRole('heading', { name: 'Juega: Bosque guardián' })).toBeTruthy()
+  })
+  it('abre cada mundo del atlas principal con su identificador y ruta de regreso', () => {
+    setup('/')
+    const links = screen.getAllByRole('link', { name: /^Explorar / })
+    expect(links).toHaveLength(5)
+    for (const id of ['energia', 'industria', 'transporte', 'bosques', 'agricultura']) {
+      const link = links.find(candidate => candidate.getAttribute('href')?.includes(`world=${id}`))
+      expect(link?.getAttribute('href')).toContain(`world=${id}`)
+      expect(link?.getAttribute('href')).toContain('return=')
+    }
   })
 })

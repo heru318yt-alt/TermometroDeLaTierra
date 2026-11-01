@@ -10,7 +10,7 @@ public static class UnityProjectSetup
 {
     private const string ScenesFolder = "Assets/Scenes";
     private const string WebGlRelativePath = "../../public/unity-minijuegos";
-    private static readonly string[] SceneNames = { "Inicio", "Energia", "Industria", "Movilidad", "Bosques", "Agricultura" };
+    private static readonly string[] SceneNames = { "Menu", "EnergiaViva", "FabricaCircular", "RutasQueRespiran", "BosqueGuardian", "FincaDelFuturo" };
 
     private static string WebGlPath
     {

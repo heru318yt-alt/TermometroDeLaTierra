@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -9,6 +10,10 @@ using UnityEngine.UI;
 /// <summary>Experiencia 2D de cinco retos climáticos para Unity y WebGL.</summary>
 public sealed class TermometroMinijuegos : MonoBehaviour
 {
+#if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")] private static extern void VolverAlAtlasWeb();
+#endif
+
     [Tooltip("-1 para el menú; 0 energía; 1 industria; 2 movilidad; 3 bosque; 4 agricultura")]
     public int sector = -1;
 
@@ -21,7 +26,7 @@ public sealed class TermometroMinijuegos : MonoBehaviour
     private static readonly Color Coral = C(232, 119, 91);
     private static readonly Color Oro = C(244, 190, 77);
     private static readonly Color Azul = C(77, 155, 174);
-    private static readonly string[] Escenas = { "Energia", "Industria", "Movilidad", "Bosques", "Agricultura" };
+    private static readonly string[] Escenas = { "EnergiaViva", "FabricaCircular", "RutasQueRespiran", "BosqueGuardian", "FincaDelFuturo" };
     private static readonly string[] Titulos = { "Energía viva", "Fábrica circular", "Rutas que respiran", "Bosque guardián", "La finca del futuro" };
     private static readonly string[] Temas = { "ENERGÍA", "INDUSTRIA", "TRANSPORTE", "BOSQUES", "AGRICULTURA" };
     private static readonly string[] Anios = { "1970-1989", "1990-1999", "2000-2009", "2010-2019", "2020-2025" };
@@ -149,6 +154,10 @@ public sealed class TermometroMinijuegos : MonoBehaviour
         {
             int mundo = MundoDesdeUrl(Application.absoluteURL);
             if (mundo >= 0) { SceneManager.LoadScene(Escenas[mundo]); return; }
+#if UNITY_WEBGL && !UNITY_EDITOR
+            VolverAlAtlasWeb();
+            return;
+#endif
         }
         CrearCanvas();
         if (sector < 0) pantalla = 0;
@@ -564,7 +573,7 @@ public sealed class TermometroMinijuegos : MonoBehaviour
         Texto(root, "PARA EL PRÓXIMO INTENTO", 10, VerdeClaro, FontStyle.Bold, TextAnchor.MiddleLeft, new Rect(.62f, .316f, 730, 18));
         Texto(root, ConsejoResultado(nivel), 13, Tinta, FontStyle.Normal, TextAnchor.MiddleLeft, new Rect(.62f, .278f, 730, 37));
         Boton(root, "PROBAR OTRA VEZ", new Color32(232, 241, 225, 255), new Rect(.43f, .19f, 220, 43), Reiniciar, 13, Verde);
-        Boton(root, sector < 4 ? "SIGUIENTE MUNDO  →" : "VOLVER AL MAPA  →", Coral, new Rect(.77f, .19f, 250, 43), Siguiente, 13);
+        Boton(root, sector < 4 ? "SIGUIENTE MUNDO  →" : "VOLVER AL ATLAS  →", Coral, new Rect(.77f, .19f, 250, 43), Siguiente, 13);
         Texto(root, "Simulación educativa; los indicadores no son mediciones reales.", 10, Verde, FontStyle.Normal, TextAnchor.MiddleLeft, new Rect(.62f, .145f, 730, 16));
     }
 
@@ -678,93 +687,13 @@ public sealed class TermometroMinijuegos : MonoBehaviour
         }
     }
 
-    private void FondoJuego()
-    {
-        Imagen(root, FondoEscena(), new Rect(.5f, .5f, 1280, 720), Color.white, "Escenario 2D " + Temas[sector]);
-        Caja(root, new Rect(.5f, .5f, 1280, 720), new Color(1f, .98f, .91f, .35f), "Luz de escena");
-    }
+    private void FondoJuego() { }
+
+    private void PanelPaisaje() { }
 
     private Sprite FondoEscena()
     {
         return sector == 0 ? TierraArt.FondoEnergia(ronda, ciudadEncendida) : TierraArt.Fondo(sector);
-    }
-
-    private void PanelPaisaje()
-    {
-        Caja(root, new Rect(.275f, .52f, 610, 500), new Color32(250, 247, 237, 215), "Ventana ilustrada");
-        Imagen(root, FondoEscena(), new Rect(.275f, .54f, 575, 310), Color.white, "Ilustración dinámica");
-        if (sector == 0) Imagen(root, TierraArt.RedEnergia(conexionesEnergia, ciudadEncendida), new Rect(.275f, .54f, 575, 310), Color.white, "Red de energía conectada a los sectores");
-        Imagen(root, TierraArt.Icono(sector), new Rect(.08f, .75f, 76, 76), Color.white, "Insignia del nivel");
-        mascotaBase = new Vector2(0, 0);
-        mascota = Imagen(root, TierraArt.Mascota, new Rect(.43f, .37f, 150, 150), Color.white, "Terra en la aventura").rectTransform;
-        mascotaBase = mascota.anchoredPosition;
-        string[] escena = { "Día y noche: cada fuente deja una huella distinta.", "El material vuelve a la obra en otra forma.", "Cada trayecto abre una ruta para alguien.", "Cada estación deja raíces nuevas.", "La rotación mantiene vivo el suelo." };
-        string[] observacion = { "OBSERVACIÓN · LA LUZ DEPENDE DE LA RED", "OBSERVACIÓN · CADA RUTA TRANSFORMA LA OBRA", "OBSERVACIÓN · LAS DISTANCIAS NO SON IGUALES", "OBSERVACIÓN · LOS BROTES NECESITAN TIEMPO", "OBSERVACIÓN · EL SUELO RECUERDA" };
-        if (sector == 3)
-        {
-            int arboles = 0, brotes = 0;
-            for (int i = 0; i < parcelasBosque.Length; i++) { if (parcelasBosque[i] == 1) arboles++; if (parcelasBosque[i] >= 3) brotes++; }
-            escena[3] = "Bosque vivo: " + arboles + " árboles · " + brotes + " brotes";
-            int visual = 0;
-            for (int i = 0; i < parcelasBosque.Length && visual < 6; i++)
-                if (bosquePlantado[i])
-                {
-                    int estado = parcelasBosque[i] >= 3 ? parcelasBosque[i] : 1;
-                    var planta = Imagen(root, TierraArt.IconoBosque(estado, riegoBosque[i]), new Rect(.105f + visual * .048f, .395f, 42, 48), Color.white, "Árbol plantado y en crecimiento");
-                    StartCoroutine(PopIn(planta.rectTransform, .25f, visual * .04f));
-                    visual++;
-                }
-        }
-        if (sector == 1 && Array.IndexOf(procesos, 2) >= 0)
-        {
-            var chispas = Imagen(root, TierraArt.Chispas, new Rect(.34f, .60f, 52, 52), Color.white, "Chispas en el proceso eléctrico");
-            StartCoroutine(PopIn(chispas.rectTransform, .22f, 0));
-        }
-        if (sector == 1)
-        {
-            Imagen(root, TierraArt.CintaIndustria(materialActual), new Rect(.195f, .444f, 340, 58), Color.white, "Cinta transportadora de cuatro materiales");
-            maquinaVisual = Imagen(root, TierraArt.MaquinaIndustria(maquinaActiva), new Rect(.38f, .535f, 78, 78), Color.white, "Máquina de transformación").rectTransform;
-            string[] nombres = { "ACERO", "CEMENTO", "VIDRIO", "ALUMINIO" };
-            for (int i = 0; i < procesos.Length; i++)
-            {
-                int pieza = i;
-                float x = .085f + (i * .052f + Time.unscaledTime * .027f) % .205f;
-                var selector = Boton(root, "", new Color(1f, 1f, 1f, materialActual == i ? .18f : .025f),
-                    new Rect(x, .453f, 48, 42), () => { materialActual = pieza; mensaje = "Pieza seleccionada: elige una ruta de transformación."; Render(); }, 8, Verde);
-                materialesCinta[i] = selector.GetComponent<RectTransform>();
-                var material = Imagen(root, TierraArt.IconoMaterial(i, procesos[i]), new Rect(x, .453f, 48, 42), Color.white,
-                    nombres[i] + (procesos[i] >= 0 ? " transformado" : " en la cinta"));
-                var etiqueta = Texto(root, nombres[i], 8, procesos[i] >= 0 ? Verde : Tinta, FontStyle.Bold, TextAnchor.MiddleCenter,
-                    new Rect(x, .399f, 56, 17));
-                etiquetasCinta[i] = etiqueta.rectTransform;
-                if (materialActual == i || procesos[i] >= 0) StartCoroutine(PopIn(material.rectTransform, .18f, 0));
-            }
-            for (int obra = 0; obra < Mathf.Clamp(ronda, 0, 3); obra++)
-            {
-                int[] conteoRutas = new int[4];
-                for (int i = 0; i < procesosObras[obra].Length; i++)
-                    if (procesosObras[obra][i] >= 0 && procesosObras[obra][i] < conteoRutas.Length) conteoRutas[procesosObras[obra][i]]++;
-                int rutaPrincipal = 0;
-                for (int ruta = 1; ruta < conteoRutas.Length; ruta++) if (conteoRutas[ruta] > conteoRutas[rutaPrincipal]) rutaPrincipal = ruta;
-                Sprite marcaObra = rutaPrincipal == 0 ? TierraArt.IconoMaterial(2, 0)
-                    : rutaPrincipal == 1 ? TierraArt.IconoMaterial(0, 1)
-                    : rutaPrincipal == 2 ? TierraArt.Chispas : TierraArt.IconoMaterial(1, 3);
-                Imagen(root, marcaObra, new Rect(.13f + obra * .072f, .59f, 38, 29), Color.white,
-                    "Proceso más usado en la obra " + (obra + 1));
-            }
-        }
-        if (sector == 4)
-        {
-            for (int i = 0; i < parcelasCultivo.Length; i++)
-            {
-                int cell = i, columna = i % 3, fila = i / 3;
-                var cultivo = Imagen(root, TierraArt.IconoCultivo(parcelasCultivo[cell], ronda + 1, compostado[cell], riegoCultivo[cell]),
-                    new Rect(.14f + columna * .078f, .385f + (1 - fila) * .045f, 54, 54), Color.white, "Cultivo visible de parcela " + (cell + 1));
-                if (parcelaSeleccionada == cell) StartCoroutine(PopIn(cultivo.rectTransform, .2f, .015f * cell));
-            }
-        }
-        Texto(root, escena[sector], 16, Verde, FontStyle.BoldAndItalic, TextAnchor.MiddleCenter, new Rect(.275f, .23f, 540, 46));
-        Texto(root, observacion[sector], 10, Suave, FontStyle.Bold, TextAnchor.MiddleCenter, new Rect(.275f, .17f, 520, 24));
     }
 
     private void Cabecera(string titulo, bool mostrarMapa)
@@ -948,13 +877,20 @@ public sealed class TermometroMinijuegos : MonoBehaviour
         if (audioManager != null) audioManager.IniciarPartida();
         if (celebrarInicio && audioManager != null) audioManager.Acierto();
     }
-    private void VolverInicio() { SceneManager.LoadScene("Inicio"); }
+    private void VolverInicio()
+    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        VolverAlAtlasWeb();
+#else
+            SceneManager.LoadScene("Menu");
+#endif
+    }
     private void Reiniciar() { PrepararPartida(false); Render(); }
     private void Siguiente()
     {
         audioManager.Acierto();
         if (sector < Escenas.Length - 1) SceneManager.LoadScene(Escenas[sector + 1]);
-        else SceneManager.LoadScene("Inicio");
+        else VolverInicio();
     }
 
     private void ResolverEnergia()

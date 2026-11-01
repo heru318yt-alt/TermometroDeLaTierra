@@ -9,6 +9,7 @@
 <body>
   <main id="unity-container" aria-label="Minijuegos de Termómetro de la Tierra">
     <canvas id="unity-canvas" width="1280" height="720" tabindex="0" aria-label="Juego interactivo"></canvas>
+    <a id="atlas-return" class="atlas-return" href="../minijuegos#mundos" aria-label="Volver al atlas de mundos">← Volver al atlas</a>
     <section id="unity-loading-bar" aria-live="polite">
       <div class="loading-title">Preparando el planeta...</div>
       <div class="progress-track"><div id="unity-progress-bar-full"></div></div>
@@ -20,6 +21,13 @@
     const loading = document.querySelector('#unity-loading-bar');
     const progress = document.querySelector('#unity-progress-bar-full');
     const warning = document.querySelector('#unity-warning');
+    const atlasReturn = document.querySelector('#atlas-return');
+    const requestedReturn = new URLSearchParams(window.location.search).get('return');
+    try {
+      const target = new URL(requestedReturn || '../minijuegos#mundos', window.location.href);
+      if (target.origin === window.location.origin) atlasReturn.href = target.href;
+    } catch { /* Mantiene el enlace relativo al atlas. */ }
+    atlasReturn.hidden = window.parent !== window;
     function unityShowBanner(message, type) {
       const notice = document.createElement('div');
       notice.className = type === 'error' ? 'notice error' : 'notice';
@@ -35,8 +43,8 @@
       frameworkUrl: buildUrl + '/unity-minijuegos.framework.js',
       codeUrl: buildUrl + '/unity-minijuegos.wasm',
       streamingAssetsUrl: 'StreamingAssets',
-      companyName: 'Termómetro de la Tierra',
-      productName: 'Termómetro de la Tierra',
+      companyName: 'DefaultCompany',
+      productName: 'TermometroDeLaTierra_Unity',
       productVersion: '1.0',
       showBanner: unityShowBanner,
       matchWebGLToCanvasSize: true,

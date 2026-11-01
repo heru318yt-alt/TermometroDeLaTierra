@@ -18,6 +18,7 @@ public static class TierraArt
     public static Sprite IconoBosque(int estado, bool regado) { return Get("terreno" + estado + (regado ? "-agua" : ""), () => CrearIconoBosque(estado, regado)); }
     public static Sprite IconoFuente(int fuente) { return Get("fuente" + fuente, () => CrearIconoFuente(fuente)); }
     public static Sprite IconoMaterial(int material, int proceso = -1) { return Get("material" + material + "-" + proceso, () => CrearIconoMaterial(material, proceso)); }
+    public static Sprite IconoResiduo(int tipo) { return Get("residuo" + tipo, () => CrearIconoResiduo(tipo)); }
     public static Sprite IconoCultivo(int tipo, int etapa, bool compostado, bool regado) { return Get("cultivo" + tipo + "-" + etapa + (compostado ? "c" : "") + (regado ? "a" : ""), () => CrearIconoCultivo(tipo, etapa, compostado, regado)); }
     public static Sprite CapaEnergia(bool encendida, int mezcla) { return Get("energia-ciudad-" + encendida + "-" + mezcla, () => CrearCapaEnergia(encendida, mezcla)); }
     public static Sprite RedEnergia(int[] sectores, bool encendida)
@@ -160,6 +161,51 @@ public static class TierraArt
             d.Circulo(94, 28, 11, new Color32(226, 119, 89, 255)); d.Linea(94, 20, 94, 36, 3, Color.white); d.Linea(86, 28, 102, 28, 3, Color.white);
         }
         return d.Sprite("Material circular " + material + " · proceso " + proceso);
+    }
+
+    private static Sprite CrearIconoResiduo(int tipo)
+    {
+        var d = new Dibujo(112, 112);
+        Color32 tinta = new Color32(35, 81, 72, 255);
+        if (tipo == 0) // botella de plástico
+        {
+            d.RectanguloRedondeado(32, 18, 80, 79, 10, new Color32(70, 169, 191, 255));
+            d.Rect(39, 69, 73, 91, new Color32(70, 169, 191, 255));
+            d.RectanguloRedondeado(43, 85, 69, 102, 4, new Color32(70, 169, 191, 255));
+            d.Rect(42, 92, 70, 100, new Color32(242, 193, 78, 255));
+            d.Rect(38, 31, 74, 35, new Color32(213, 244, 232, 255));
+            d.RectanguloRedondeado(40, 44, 72, 63, 4, new Color32(242, 247, 229, 235));
+            d.Rect(47, 48, 65, 52, tinta);
+        }
+        else if (tipo == 1) // papel recuperable
+        {
+            d.Triangulo(28, 12, 82, 12, 82, 94, new Color32(235, 225, 190, 255));
+            d.Triangulo(28, 12, 28, 94, 82, 94, new Color32(249, 244, 222, 255));
+            d.Triangulo(64, 76, 82, 76, 82, 94, new Color32(205, 192, 154, 255));
+            d.Linea(38, 67, 69, 67, 3, new Color32(170, 157, 124, 255));
+            d.Linea(38, 56, 72, 56, 3, new Color32(170, 157, 124, 255));
+            d.Linea(38, 45, 72, 45, 3, new Color32(170, 157, 124, 255));
+            d.Linea(38, 34, 60, 34, 3, new Color32(170, 157, 124, 255));
+        }
+        else if (tipo == 2) // botella de vidrio
+        {
+            d.RectanguloRedondeado(34, 16, 78, 80, 9, new Color32(102, 181, 143, 255));
+            d.Rect(42, 71, 70, 94, new Color32(102, 181, 143, 255));
+            d.RectanguloRedondeado(46, 88, 66, 103, 4, new Color32(102, 181, 143, 255));
+            d.Rect(44, 91, 68, 97, new Color32(239, 193, 80, 255));
+            d.Rect(40, 25, 46, 71, new Color32(203, 241, 216, 220));
+            d.Rect(39, 75, 73, 79, new Color32(47, 126, 103, 255));
+        }
+        else // lata de metal
+        {
+            d.RectanguloRedondeado(30, 21, 82, 91, 8, new Color32(162, 177, 171, 255));
+            d.Rect(35, 20, 77, 27, new Color32(92, 114, 108, 255));
+            d.RectanguloRedondeado(35, 81, 77, 89, 4, new Color32(92, 114, 108, 255));
+            d.Linea(39, 35, 72, 35, 3, Color.white);
+            d.Circulo(56, 56, 12, new Color32(77, 146, 107, 255));
+            d.Linea(48, 56, 64, 56, 3, Color.white);
+        }
+        return d.Sprite("Residuo de fábrica · " + tipo);
     }
 
     private static Sprite CrearIconoCultivo(int tipo, int etapa, bool compostado, bool regado)
@@ -717,7 +763,7 @@ public static class TierraArt
         {
             var texture = new Texture2D(ancho, alto, TextureFormat.RGBA32, false);
             texture.name = nombre; texture.filterMode = FilterMode.Bilinear; texture.wrapMode = TextureWrapMode.Clamp;
-            texture.SetPixels32(pixeles); texture.Apply(false, true);
+            texture.SetPixels32(pixeles); texture.Apply(false, false);
             return UnityEngine.Sprite.Create(texture, new Rect(0, 0, ancho, alto), new Vector2(.5f, .5f), 100f, 0, SpriteMeshType.FullRect, border);
         }
     }
