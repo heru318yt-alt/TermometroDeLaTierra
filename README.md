@@ -39,9 +39,12 @@ src/
     explorer/ExplorerPage.tsx Explorador interactivo y componentes asociados
     history/HistoryPage.tsx   Seis períodos entre 1970 y 2025
     games/catalog.ts         Tipos y catálogo de los cinco módulos
-    games/GamesPage.tsx       Presentación de módulos pendientes
+    games/GamesPage.tsx       Alojamiento del build Unity WebGL y temas
     about/AboutPage.tsx       Objetivos, estado y fuentes
   styles.css                  Estilos compartidos y reglas responsive
+unity/
+  TermometroMinijuegos/       Proyecto Unity 6, escena, tooling y C#
+public/unity-minijuegos/       index.html + archivos del build Unity WebGL
 ```
 
 ## Rutas
@@ -57,11 +60,11 @@ src/
 
 BrowserRouter permite enlaces y navegación real con historial. Al desplegar en un alojamiento estático deberá configurarse el fallback de las rutas a `index.html`; Vite ya lo resuelve en desarrollo y preview. No se ha desplegado esta versión.
 
-## Arquitectura para siguientes etapas
+## Proyecto Unity de minijuegos
 
-Cada funcionalidad vive en `features/`. Para incorporar un juego, crear su carpeta dentro de `features/games/`, mantener allí componentes, estilos y lógica, ampliar el tipo y la entrada correspondiente en `catalog.ts` y registrar su ruta en `app/App.tsx` (preferiblemente con carga diferida). El encabezado y el resto de páginas no necesitan cambios. El catálogo actual solo acepta estado `pending`, por lo que no sugiere juegos disponibles.
+La ruta `/minijuegos` aloja el build WebGL de Unity en un iframe adaptable; el menú de juego permite seleccionar energía, industria, transporte, bosques o agricultura. El proyecto Unity está en `unity/TermometroMinijuegos`; sus instrucciones de apertura y compilación están en su README. Para actualizar la versión web, desde Unity selecciona **Termómetro → Compilar WebGL para la web**, que genera `public/unity-minijuegos/`, y luego ejecuta `npm run build`.
 
-El explorador dispone de una representación mundial, gráfico SVG, reproducción y línea de tiempo sincronizados, comparaciones y procedencia de los datos. No hay backend, autenticación, base de datos, mediciones simuladas, audio ni videojuegos implementados.
+El explorador dispone de una representación mundial, gráfico SVG, reproducción y línea de tiempo sincronizados, comparaciones y procedencia de los datos. No hay backend, autenticación, base de datos, mediciones simuladas ni audio. Los minijuegos son simulaciones didácticas; sus indicadores no representan factores de emisión medidos ni datos NASA GISTEMP.
 
 ## Explorador interactivo (etapa 3)
 
@@ -169,11 +172,11 @@ const thresholds = getParisThresholds(years)
 
 ## Accesibilidad y diseño
 
-El pulido visual se concentra en `src/polish.css`: ritmo vertical más compacto en Inicio, cards y enlaces con respuesta de hover/foco, tarjetas editoriales de Historia y módulos de Minijuegos alineados. Las cards pendientes de Minijuegos permiten foco para leer su título y estado, pero siguen siendo artículos informativos, sin acciones de juego. Las transiciones duran 170 ms y los desplazamientos de enlaces/cards son de 2–3 px; con movimiento reducido se eliminan desplazamientos y animaciones.
+El pulido visual se concentra en `src/polish.css`: ritmo vertical más compacto en Inicio, cards y enlaces con respuesta de hover/foco, tarjetas editoriales de Historia y el contenedor adaptable de Unity WebGL. Las tarjetas de Minijuegos describen los cinco temas disponibles. Las transiciones duran 170 ms y los desplazamientos de enlaces/cards son de 2–3 px; con movimiento reducido se eliminan desplazamientos y animaciones.
 
 El menú mantiene su comportamiento de navegación desplegable (no es un diálogo modal). Incluye backdrop, estado activo, Escape y cierre exterior. Bloquea el scroll del fondo mientras está abierto y restaura el valor previo al cerrar o desmontar. El panel tiene scroll propio en pantallas bajas; salir de la cabecera con teclado cierra el menú. El planeta comparte un único contorno entre océano y `clipPath`, calculado con la envolvente de la proyección original y un margen mínimo: conserva los continentes sin deformarlos y recorta todas las capas geográficas en el mismo límite.
 
-Diseño adaptable a escritorio, tableta y móvil con rejillas que pasan a una columna. Navegación semántica, un título principal por página, enlace para saltar al contenido, foco visible, título del documento por ruta y foco en el contenido al navegar. El menú utiliza un botón con `aria-expanded` y `aria-controls`; se cierra con el botón, Escape, clic exterior, selección de enlace o al salir de sus enlaces mediante teclado. Escape devuelve el foco al botón. Los módulos pendientes son texto informativo, no botones falsos.
+Diseño adaptable a escritorio, tableta y móvil con rejillas que pasan a una columna. Navegación semántica, un título principal por página, enlace para saltar al contenido, foco visible, título del documento por ruta y foco en el contenido al navegar. El menú utiliza un botón con `aria-expanded` y `aria-controls`; se cierra con el botón, Escape, clic exterior, selección de enlace o al salir de sus enlaces mediante teclado. Escape devuelve el foco al botón.
 
 ## Referencias y límites
 

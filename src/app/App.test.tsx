@@ -67,12 +67,12 @@ describe('Recorrido de la aplicación', () => {
     await userEvent.click(screen.getByRole('heading', { level: 1 }))
     expect(screen.queryByRole('navigation')).toBeNull()
   })
-  it('presenta seis períodos y cinco módulos pendientes, sin botones de juego', () => {
+  it('presenta seis períodos y carga la experiencia Unity con cinco temas disponibles', () => {
     const view = setup('/historia')
     expect(screen.getAllByText('Contenido pendiente')).toHaveLength(6)
     view.unmount()
     setup('/minijuegos')
-    expect(screen.getAllByText('Pendiente de implementación')).toHaveLength(5)
-    expect(screen.queryByRole('button', { name: /jugar/i })).toBeNull()
+    expect(screen.getAllByText('Disponible en Unity')).toHaveLength(5)
+    expect(screen.getByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)').getAttribute('src')).toContain('unity-minijuegos/index.html')
   })
 })
