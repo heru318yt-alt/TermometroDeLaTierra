@@ -1,32 +1,14 @@
 # Unity: minijuegos
 
-Esta carpeta reúne la parte hecha en Unity y su relación con la página web.
+El proyecto Unity editable es `Minijuegos_Termo/` (Unity 6.3.14f1). Ábrelo desde Unity Hub.
 
-## Qué abrir
+- Escena principal: `Assets/GAME/SCENES/Mapa.unity`.
+- Misiones: energía, fábrica, rutas, bosque y finca.
+- Informe de pruebas: `Assets/DOCUMENTATION/VALIDATION_REPORT.md`.
+- Créditos y licencias: `Assets/DOCUMENTATION/ASSET_CREDITS.md`.
+- Build WebGL editable: `Build/WebGL/`.
+- Build que carga la página: `../public/unity-minijuegos/`.
 
-- **Proyecto editable:** `TermometroMinijuegos/` — ábrelo desde Unity Hub.
-- **Reconstrucción Unity verificada:** `Minijuegos_Termo/` — proyecto independiente con las seis escenas, assets originales seleccionados, datos modulares y salida WebGL.
-- **Escena de entrada:** `TermometroMinijuegos/Assets/Scenes/Inicio.unity`.
-- **Misiones 2D:** `Energia`, `Industria`, `Movilidad`, `Bosques` y `Agricultura`.
-- **Juego e interacciones:** `TermometroMinijuegos/Assets/Scripts/TermometroMinijuegos.cs`.
-- **Arte y personaje original:** `TermometroMinijuegos/Assets/Scripts/TierraArt.cs`.
-- **Música y efectos:** `TermometroMinijuegos/Assets/Scripts/TierraAudio.cs`.
-- **Herramientas del editor:** `TermometroMinijuegos/Assets/Editor/UnityProjectSetup.cs`.
-- **Diseño adaptable para WebGL:** `TermometroMinijuegos/Assets/WebGLTemplates/Tierra/`.
-- **Versión que carga la web:** `../public/unity-minijuegos/`.
+Para recompilar, abre el proyecto y usa `Termómetro de la Tierra > Compilar WebGL`. Copia la salida a `public/unity-minijuegos/` conservando la plantilla de la página (`index.html` y `style.css`) y los nombres de archivos que indica su configuración. El build publicado se guarda sin compresión Brotli para que funcione en el hosting estático sin configuración adicional de cabeceras.
 
-## Flujo de actualización
-
-1. Abre `TermometroMinijuegos/` en Unity Hub.
-2. Si faltan escenas, usa **Termómetro → Crear todas las escenas 2D**. Cada mundo se guarda por separado dentro de `Assets/Scenes/`.
-3. Edita la lógica, el arte o el audio dentro de `Assets/Scripts/`.
-4. En Unity, usa **Termómetro → Compilar WebGL para la web**.
-5. La compilación usa un lienzo 16:9 adaptable, incluye el menú y las cinco misiones, y reemplaza `public/unity-minijuegos/`, que consume `/minijuegos`.
-
-El personaje Terra, los paisajes y los iconos son ilustraciones originales 2D generadas localmente por el proyecto. La música y los efectos también se sintetizan en ejecución, sin depender de descargas externas. El panel `♫` permite ajustar música y efectos por separado. La página mantiene un marco adaptable para escritorio y móvil.
-
-Unity crea `Library/`, `Logs/` y `UserSettings/` al abrir el proyecto. Son cachés locales ignoradas por Git; no hace falta ordenarlas ni subirlas.
-
-Para requisitos, versión de Unity, instalación de WebGL y ejecución por línea de comandos, consulta [la guía del proyecto](TermometroMinijuegos/README.md).
-
-El proyecto `Minijuegos_Termo/` se conserva separado para no alterar el proyecto que usa actualmente la página. Su informe está en `Minijuegos_Termo/Assets/DOCUMENTATION/VALIDATION_REPORT.md` y el build probado en `Minijuegos_Termo/Build/WebGL/`.
+Unity regenera `Library/`, `Logs/` y `UserSettings/` al abrir el proyecto; no es necesario subir esas carpetas.

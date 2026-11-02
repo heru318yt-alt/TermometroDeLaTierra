@@ -43,8 +43,7 @@ src/
     about/AboutPage.tsx       Objetivos, estado y fuentes
   styles.css                  Estilos compartidos y reglas responsive
 unity/README.md               Mapa y flujo de trabajo de la parte Unity
-unity/TermometroMinijuegos/    Proyecto Unity 6, escena, tooling y C#
-unity/Minijuegos_Termo/        Proyecto Unity 6 verificado con las seis escenas y build WebGL
+unity/Minijuegos_Termo/        Proyecto Unity 6 con las seis escenas y build WebGL
 public/unity-minijuegos/       index.html + archivos del build Unity WebGL
 ```
 
@@ -63,7 +62,7 @@ BrowserRouter permite enlaces y navegación real con historial. Al desplegar en 
 
 ## Proyecto Unity de minijuegos
 
-La ruta `/minijuegos` aloja el build WebGL de Unity en un iframe adaptable. Unity incluye un mapa de entrada y cinco escenas de misión 2D (energía, industria, transporte, bosques y agricultura), personaje original animado, interacciones distintas por escena, música sintetizada y efectos con controles independientes. El proyecto está en `unity/TermometroMinijuegos`; consulta [la guía de Unity](unity/README.md). Para actualizar la versión web, usa **Termómetro → Compilar WebGL para la web**; se generan todas las escenas en `public/unity-minijuegos/`.
+La ruta `/minijuegos` aloja el build WebGL de Unity en un iframe adaptable. Unity incluye el atlas y cinco escenas de misión 2D (energía, fábrica, rutas, bosque y finca). El proyecto editable está en `unity/Minijuegos_Termo`; consulta [la guía de Unity](unity/README.md). Su build WebGL se publica en `public/unity-minijuegos/`.
 
 El explorador dispone de una esfera giratoria con el indicador global, gráfico SVG, reproducción y línea de tiempo sincronizados, comparación junto al planeta y procedencia de los datos. No hay backend, autenticación ni base de datos. El explorador no reproduce audio; los minijuegos incluidos en Unity generan música y efectos originales localmente. Sus indicadores son simulaciones didácticas, no factores de emisión medidos ni datos NASA GISTEMP.
 
