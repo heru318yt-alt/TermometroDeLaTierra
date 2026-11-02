@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { PageIntro } from '../../components/PageIntro'
-import { historicalPeriods } from './catalog'
+import { historicalPeriods, narrativePhases } from './catalog'
 export { periods } from './catalog'
 
 export function HistoryPage() {
@@ -8,18 +9,28 @@ export function HistoryPage() {
   const [eventIndex, setEventIndex] = useState(0)
   const period = historicalPeriods[periodIndex]
   const event = period.events[eventIndex]
+  const totalEvents = historicalPeriods.reduce((total, item) => total + item.events.length, 0)
 
   function selectPeriod(index: number) {
     setPeriodIndex(index)
     setEventIndex(0)
   }
 
-  return <div className="page-width inner-page history-page">
-    <PageIntro number="02" title="El clima, a través del tiempo.">Un recorrido por la ciencia, los acuerdos y las decisiones que han marcado la conversación climática.</PageIntro>
+  return <div className="history-page">
+    <PageIntro number="03" title="El clima, a través del tiempo." eyebrow="BITÁCORA · 1970—2025">
+      Un recorrido por la ciencia, los acuerdos y las decisiones que han marcado la conversación climática. Cada hito enlaza con la fuente que lo documenta.
+    </PageIntro>
+
+    <section className="history-prologue" aria-label="Resumen de la bitácora">
+      <div className="history-prologue-stat"><strong>06</strong><span>períodos narrativos</span></div>
+      <div className="history-prologue-stat"><strong>{totalEvents}</strong><span>hitos documentados</span></div>
+      <div className="history-prologue-stat"><strong>56</strong><span>años de conversación pública</span></div>
+      <p>La historia del clima no es una sola línea. Es la historia de cómo la ciencia, la economía y la política aprendieron a mirar el mismo planeta.</p>
+    </section>
 
     <section className="history-journey" aria-labelledby="history-journey-title">
       <div className="history-journey-heading">
-        <div><p className="eyebrow">BITÁCORA HISTÓRICA · 1970—2025</p><h2 id="history-journey-title">Seis décadas de preguntas y acuerdos</h2></div>
+        <div><p className="eyebrow">LÍNEA EDITORIAL · 1970—2025</p><h2 id="history-journey-title">Seis décadas de preguntas y acuerdos</h2></div>
         <p>Elige un período y explora sus hitos. Cada fecha enlaza con la fuente que la documenta.</p>
       </div>
 
@@ -52,6 +63,26 @@ export function HistoryPage() {
         </article>
       </div>
       <p className="history-method-note">Esta línea reúne hitos institucionales documentados; no representa por sí sola una serie de temperatura ni explica las causas de un dato particular.</p>
+    </section>
+
+    <section className="history-material" aria-labelledby="history-material-title">
+      <div className="history-material-head">
+        <div><p className="eyebrow">OTRA FORMA DE LEER LAS DÉCADAS</p><h2 id="history-material-title">Los ritmos materiales de la era industrial</h2></div>
+        <p>Una organización narrativa preliminar en cinco bloques. No significa que cada actividad apareciera o desapareciera exclusivamente en esa década: son capas que se acumulan.</p>
+      </div>
+      <ol className="history-phase-list">
+        {narrativePhases.map(phase => <li key={phase.start} className={`history-phase phase-${phase.factor}`}>
+          <span className="history-phase-years">{phase.label}</span>
+          <div><span className="history-phase-focus">{phase.focus}</span><p>{phase.text}</p></div>
+          <a href={phase.source} target="_blank" rel="noreferrer">{phase.sourceLabel} ↗</a>
+        </li>)}
+      </ol>
+      <p className="history-material-note">La relación entre una actividad y una variación de temperatura requiere atribución científica. Esta sección propone un contexto, no una prueba causal.</p>
+    </section>
+
+    <section className="history-next" aria-label="Continuar el recorrido">
+      <p className="eyebrow">CONTINÚA EL RECORRIDO</p>
+      <div><h2>Los hitos explican decisiones. Los factores explican presiones.</h2><Link className="button" to="/factores">Explorar los cinco factores <span aria-hidden="true">↗</span></Link></div>
     </section>
   </div>
 }

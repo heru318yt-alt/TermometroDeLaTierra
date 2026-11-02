@@ -29,8 +29,10 @@ describe('Recorrido de la aplicación', () => {
   })
   it.each([
     ['/', 'El clima cambia.'], ['/explorador', 'Explorador climático'],
-    ['/historia', 'El clima, a través del tiempo.'], ['/minijuegos', 'Aprender también es jugar.'],
-    ['/acerca', 'Comprender para participar.'], ['/ruta-inexistente', 'Página no encontrada'],
+    ['/linea-del-tiempo', 'Línea del tiempo'], ['/historia', 'El clima, a través del tiempo.'],
+    ['/factores', 'Factores del cambio climático'], ['/minijuegos', 'Aprender también es jugar.'],
+    ['/fuentes', 'Fuentes y metodología'], ['/acerca', 'Comprender para participar.'],
+    ['/ruta-inexistente', 'Esta coordenada no existe.'],
   ])('resuelve la ruta %s', (path, title) => {
     setup(path)
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(title)
@@ -51,12 +53,26 @@ describe('Recorrido de la aplicación', () => {
   })
   it('navega por todos los enlaces del menú y lo cierra al seleccionar', async () => {
     setup()
-    for (const label of ['Explorador climático', 'Historia', 'Minijuegos', 'Acerca del proyecto', 'Inicio']) {
+    for (const label of ['Explorador climático', 'Línea del tiempo', 'Historia del clima', 'Factores del cambio climático', 'Minijuegos', 'Fuentes y metodología', 'Acerca del proyecto', 'Inicio']) {
       await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }))
       await userEvent.click(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: new RegExp(label) }))
       expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
       expect(document.title).toContain(label)
     }
+  })
+  it('mantiene el audio apagado hasta que la persona lo activa', async () => {
+    window.localStorage.clear()
+    setup()
+    expect(screen.getByRole('button', { name: /Sonido/ })).toBeTruthy()
+    expect(screen.getByText('Apagado')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: /Sonido/ }))
+    const sliders = screen.getAllByRole('slider') as HTMLInputElement[]
+    expect(sliders.map(slider => slider.value)).toEqual(['34', '52'])
+    const power = screen.getByRole('button', { name: 'Activar audio' })
+    expect(power.getAttribute('aria-pressed')).toBe('false')
+    await userEvent.click(power)
+    expect(screen.getByRole('button', { name: 'Desactivar audio' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Silenciar' })).toBeTruthy()
   })
   it('cierra al pulsar el botón o fuera del menú', async () => {
     setup()

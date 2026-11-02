@@ -26,22 +26,32 @@ React + TypeScript, Vite y React Router. CSS propio, fuentes del sistema, una es
 
 ```text
 src/
-  main.tsx                    Entrada y BrowserRouter
+  main.tsx                    Entrada, BrowserRouter y hojas de estilo base
   app/
     App.tsx                   Rutas y página 404
     App.test.tsx              Pruebas de comportamiento
   components/
-    Layout.tsx                Encabezado, menú, contenido y pie compartidos
+    Layout.tsx                Encabezado, menú, audio, contenido y pie
+    AudioControls.tsx         Panel de sonido: activar, silenciar y volúmenes
     PageIntro.tsx             Introducción reutilizable de las páginas
     Globe.tsx                 Ilustración decorativa, no cartografía científica
   features/
-    home/HomePage.tsx         Inicio y acceso al explorador
+    home/HomePage.tsx         Portada con lectura vigente y señal anual
+    home/WorldAtlas.tsx       Atlas de acceso a los cinco minijuegos
     explorer/ExplorerPage.tsx Explorador interactivo y componentes asociados
-    history/HistoryPage.tsx   Seis períodos entre 1970 y 2025
-    games/catalog.ts         Tipos y catálogo de los cinco módulos
+    timeline/TimelinePage.tsx Línea del tiempo sincronizada
+    history/HistoryPage.tsx   Seis períodos y cinco fases materiales
+    factors/FactorsPage.tsx   Cinco factores con contexto y fuentes
+    sources/SourcesPage.tsx   Biblioteca de fuentes y metodología
+    games/catalog.ts          Tipos y catálogo de los cinco módulos
     games/GamesPage.tsx       Alojamiento del build Unity WebGL y temas
+    audio/AudioProvider.tsx   Paisaje sonoro sintetizado con Web Audio
     about/AboutPage.tsx       Objetivos, estado y fuentes
-  styles.css                  Estilos compartidos y reglas responsive
+  styles/
+    base.css                  Tokens, tipografía, primitivas y foco
+    site.css                  Cabecera, portada, estructura y responsive
+    editorial.css             Historia, factores, juegos, fuentes y acerca
+  features/explorer/explorer.css  Explorador y línea del tiempo
 unity/README.md               Mapa y flujo de trabajo de la parte Unity
 unity/Minijuegos_Termo/        Proyecto Unity 6 con las seis escenas y build WebGL
 public/unity-minijuegos/       index.html + archivos del build Unity WebGL
@@ -51,11 +61,14 @@ public/unity-minijuegos/       index.html + archivos del build Unity WebGL
 
 | Ruta | Contenido |
 | --- | --- |
-| `/` | Inicio |
+| `/` | Portada editorial, lectura NASA vigente y acceso a los capítulos |
 | `/explorador` | Globo giratorio, indicador, gráfico, línea de tiempo, comparación e información contextual |
-| `/historia` | 1970–1979, 1980–1989, 1990–1999, 2000–2009, 2010–2019 y 2020–2025 |
+| `/linea-del-tiempo` | Sala de instrumentos con esfera, serie histórica y reproducción |
+| `/historia` | 1970–1979, 1980–1989, 1990–1999, 2000–2009, 2010–2019 y 2020–2025, con eventos y fases materiales |
+| `/factores` | Energía, industria, transporte, bosques y agricultura, con datos y fuentes sectoriales |
 | `/minijuegos` | Energía, industria, transporte, bosques y agricultura |
-| `/acerca` | Proyecto y fuentes |
+| `/fuentes` | Biblioteca de referencias, notas metodológicas y auditoría del conjunto local |
+| `/acerca` | Proyecto y alcance |
 | Cualquier otra | Página 404 con regreso al inicio |
 
 BrowserRouter permite enlaces y navegación real con historial. Al desplegar en un alojamiento estático deberá configurarse el fallback de las rutas a `index.html`; Vite ya lo resuelve en desarrollo y preview. No se ha desplegado esta versión.
@@ -64,7 +77,7 @@ BrowserRouter permite enlaces y navegación real con historial. Al desplegar en 
 
 La ruta `/minijuegos` aloja el build WebGL de Unity en un iframe adaptable. Unity incluye el atlas y cinco escenas de misión 2D (energía, fábrica, rutas, bosque y finca). El proyecto editable está en `unity/Minijuegos_Termo`; consulta [la guía de Unity](unity/README.md). Su build WebGL se publica en `public/unity-minijuegos/`.
 
-El explorador dispone de una esfera giratoria con el indicador global, gráfico SVG, reproducción y línea de tiempo sincronizados, comparación junto al planeta y procedencia de los datos. No hay backend, autenticación ni base de datos. El explorador no reproduce audio; los minijuegos incluidos en Unity generan música y efectos originales localmente. Sus indicadores son simulaciones didácticas, no factores de emisión medidos ni datos NASA GISTEMP.
+El explorador dispone de una esfera giratoria con el indicador global, gráfico SVG, reproducción y línea de tiempo sincronizados, comparación junto al planeta y procedencia de los datos. No hay backend, autenticación ni base de datos. El sitio incluye un paisaje sonoro sintetizado en el navegador que permanece apagado hasta que la persona lo activa; los minijuegos incluidos en Unity generan además su propia música y efectos localmente. Sus indicadores son simulaciones didácticas, no factores de emisión medidos ni datos NASA GISTEMP.
 
 ## Explorador interactivo (etapa 3)
 
@@ -95,7 +108,7 @@ Los contornos se derivaron de Natural Earth 1:110m, dominio público. Procedenci
 
 Velocidades: 1,4 s, 0,7 s y 0,25 s por paso; un paso es un mes o un año según la vista. Se detiene al final y al navegar manualmente. Reproducir desde el final reinicia en 1926. Cambiar resolución pausa. El intervalo se limpia al pausar, cambiar velocidad o modo, alcanzar el extremo o desmontar, también bajo React StrictMode. Ocultar la pestaña pausa la reproducción.
 
-Con `prefers-reduced-motion: reduce`, se deshabilitan reproducción automática y transiciones; los controles manuales permanecen activos. Un cambio de preferencia durante la reproducción también la detiene. No hay audio. El gráfico admite flechas, Inicio y Fin al recibir foco. En móvil dispone de desplazamiento horizontal interno para preservar la legibilidad de ejes y etiquetas; el resto de la página no necesita desplazamiento horizontal.
+Con `prefers-reduced-motion: reduce`, se deshabilitan reproducción automática y transiciones; los controles manuales permanecen activos. Un cambio de preferencia durante la reproducción también la detiene. El paisaje sonoro es opcional y nunca se reproduce antes de activarlo; el panel permite apagarlo, silenciarlo y ajustar música y efectos. El gráfico admite flechas, Inicio y Fin al recibir foco. En móvil dispone de desplazamiento horizontal interno para preservar la legibilidad de ejes y etiquetas; el resto de la página no necesita desplazamiento horizontal.
 
 ### Comparaciones
 
@@ -105,9 +118,17 @@ Las dos ventanas usan `averageAnnualRange`: cinco J-D completos en cada extremo,
 
 ### Historia y límites
 
-`src/features/history/catalog.ts` extrae y comparte el catálogo que antes estaba en `HistoryPage.tsx`. Se conservan los seis períodos. Las descripciones históricas todavía no están documentadas: el explorador lo indica en lugar de inventar acontecimientos. Fuera de esos años muestra contexto climático general. El gráfico obtiene las líneas de París desde `getParisThresholds`; no incluye constantes históricas duplicadas. Ver la limitación preindustrial más abajo.
+`src/features/history/catalog.ts` comparte el catálogo de los seis períodos con el explorador y la línea del tiempo. Cada período incluye eventos fechados con su enlace de referencia; la portada de Historia añade una segunda lectura material en cinco fases, presentada explícitamente como superposición narrativa y no como una relación causal entre una actividad y una variación de temperatura. Fuera de esos años, el explorador muestra contexto climático general. El gráfico obtiene las líneas de París desde `getParisThresholds`; no incluye constantes históricas duplicadas. Ver la limitación preindustrial más abajo.
 
-Las pruebas nuevas están en `Explorer.test.tsx` y `model.test.ts`: selección inicial/final, sincronización, mensual/anual, J-D incompleto, entradas inválidas, controles y comparación, reproducción/pausa/velocidad, fin del recorrido, movimiento reducido y limpieza de intervalos/listeners. Las pruebas de rutas, menú y procesamiento de etapas anteriores se mantienen.
+Las pruebas cubren además la portada, las nuevas rutas, la navegación por capítulos y el audio desactivado por defecto. Las pruebas del explorador y del modelo se mantienen.
+
+## Factores, fuentes y audio
+
+`/factores` presenta cinco fuerzas —energía, industria, transporte, bosques y agricultura— con relevancia climática, contexto histórico, un dato sectorial atribuido, palancas de acción y fuentes. No atribuye variaciones concretas de temperatura a una actividad: esa relación requiere atribución científica y el texto lo advierte.
+
+`/fuentes` reúne diez referencias y ocho notas metodológicas, además de la auditoría del conjunto local (cobertura, recuentos, unidad, fecha de descarga y hash SHA-256).
+
+El audio del sitio se sintetiza con Web Audio y no usa archivos ni peticiones externas. Se crea únicamente después de una acción de la persona; el panel permite apagarlo, silenciarlo y ajustar música y efectos, y recuerda los volúmenes en `localStorage` cuando está disponible. Los minijuegos de Unity conservan su propio audio.
 
 ## Datos climáticos: descarga y almacenamiento
 
@@ -172,11 +193,11 @@ const thresholds = getParisThresholds(years)
 
 ## Accesibilidad y diseño
 
-El pulido visual se concentra en `src/polish.css`: ritmo vertical más compacto en Inicio, cards y enlaces con respuesta de hover/foco, tarjetas editoriales de Historia y el contenedor adaptable de Unity WebGL. Las tarjetas de Minijuegos describen los cinco temas disponibles. Las transiciones duran 170 ms y los desplazamientos de enlaces/cards son de 2–3 px; con movimiento reducido se eliminan desplazamientos y animaciones.
+El diseño visual se organiza en `src/styles/base.css` (tokens, tipografía y primitivas), `src/styles/site.css` (cabecera, portada y estructura), `src/styles/editorial.css` (historia, factores, juegos, fuentes y acerca) y `src/features/explorer/explorer.css` (explorador y línea del tiempo). La dirección es de observatorio editorial: papel cálido, verde bosque, acentos ámbar, óxido y musgo, tipografía serif para titulares, sans para cuerpo y mono para etiquetas. Las transiciones son breves y con movimiento reducido se eliminan desplazamientos y animaciones.
 
-El menú mantiene su comportamiento de navegación desplegable (no es un diálogo modal). Incluye backdrop, estado activo, Escape y cierre exterior. Bloquea el scroll del fondo mientras está abierto y restaura el valor previo al cerrar o desmontar. El panel tiene scroll propio en pantallas bajas; salir de la cabecera con teclado cierra el menú. El planeta comparte un único contorno entre océano y `clipPath`, calculado con la envolvente de la proyección original y un margen mínimo: conserva los continentes sin deformarlos y recorta todas las capas geográficas en el mismo límite.
+El menú mantiene su comportamiento de navegación desplegable (no es un diálogo modal). Incluye backdrop, estado activo, Escape y cierre exterior. Bloquea el scroll del fondo mientras está abierto y restaura el valor previo al cerrar o desmontar. El panel tiene scroll propio en pantallas bajas; salir de la cabecera con teclado cierra el menú. En escritorio, la cabecera muestra los siete capítulos; en pantallas estrechas se sustituyen por el índice desplegable.
 
-Diseño adaptable a escritorio, tableta y móvil con rejillas que pasan a una columna. Navegación semántica, un título principal por página, enlace para saltar al contenido, foco visible, título del documento por ruta y foco en el contenido al navegar. El menú utiliza un botón con `aria-expanded` y `aria-controls`; se cierra con el botón, Escape, clic exterior, selección de enlace o al salir de sus enlaces mediante teclado. Escape devuelve el foco al botón.
+Diseño adaptable a escritorio, tableta y móvil con rejillas que pasan a una columna. Navegación semántica, un título principal por página, enlace para saltar al contenido, foco visible, título del documento por ruta y foco en el contenido al navegar. El menú utiliza un botón con `aria-expanded` y `aria-controls`; se cierra con el botón, Escape, clic exterior, selección de enlace o al salir de sus enlaces mediante teclado. Escape devuelve el foco al botón. Los controles de audio también usan `aria-expanded`, `aria-pressed` y cierre con Escape.
 
 ## Referencias y límites
 
@@ -184,4 +205,4 @@ Diseño adaptable a escritorio, tableta y móvil con rejillas que pasan a una co
 - Lenssen et al. (2024): [A GISTEMPv4 observational uncertainty ensemble](https://doi.org/10.1029/2023JD040179). Journal of Geophysical Research: Atmospheres, 129, e2023JD040179.
 - [Referencia del profesor](https://temperatura-mu.vercel.app/): el acceso mediante la herramienta de consulta falló. Se conserva como recurso proporcionado, sin atribuirle funcionalidades ni reutilizar código.
 
-Los períodos de Historia son una estructura editorial, no una cronología documentada todavía. El globo de Inicio es una ilustración conceptual. La línea de tiempo interactiva empieza en 1926 y acaba en el último mes de los metadatos; las bandas históricas no restringen ese recorrido. Este CSV global no contiene datos espaciales para colorear regiones del mapa.
+Los períodos de Historia son una estructura editorial; los eventos incluidos están fechados y enlazados a fuentes, y las cinco fases materiales se presentan como una lectura narrativa, no como una cronología causal. El globo de Inicio es una ilustración conceptual. La línea de tiempo interactiva empieza en 1926 y acaba en el último mes de los metadatos; las bandas históricas no restringen ese recorrido. Este CSV global no contiene datos espaciales para colorear regiones del mapa.

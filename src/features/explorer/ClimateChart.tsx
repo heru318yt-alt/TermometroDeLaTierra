@@ -36,7 +36,7 @@ export default function ClimateChart() {
     return Math.max(0, Math.min(series.length - 1, Math.round((localX - left) / (width - left - right) * (series.length - 1))))
   }
   return <section className="panel climate-chart" aria-labelledby="chart-title">
-    <div className="panel-heading"><h2 id="chart-title">La evolución en una línea</h2><span className="badge">{mode === 'monthly' ? 'Serie mensual' : 'Serie anual J-D'}</span></div>
+    <div className="panel-heading"><h2 id="chart-title" className="visually-hidden">La evolución en una línea</h2><span className="badge">{mode === 'monthly' ? 'Serie mensual' : 'Serie anual J-D'}</span></div>
     <p className="muted">Anomalía (°C), referencia 1951–1980. Toca la curva para seleccionar una fecha; con foco en el gráfico, usa ← y →, Inicio o Fin. En pantallas pequeñas puedes desplazar el gráfico horizontalmente.</p>
     <div className="chart-scroll">
       <svg viewBox={`0 0 ${width} ${height}`} role="group" tabIndex={0} aria-label={`Gráfico climático ${mode === 'monthly' ? 'mensual' : 'anual'}. Selección: ${label}, ${formatAnomaly(anomaly)}`} aria-describedby="chart-explanation"
