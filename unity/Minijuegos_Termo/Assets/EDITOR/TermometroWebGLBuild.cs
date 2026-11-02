@@ -2,13 +2,17 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public static class TermometroWebGLBuild
 {
     [MenuItem("Termómetro de la Tierra/Compilar WebGL")]
     public static void BuildWebGL()
     {
+        EnsureAtlasWorldRouter();
+
         var scenes = EditorBuildSettings.scenes
             .Where(scene => scene.enabled)
             .Select(scene => scene.path)
@@ -65,5 +69,20 @@ public static class TermometroWebGLBuild
         {
             Debug.LogError($"[Termómetro] Falló la compilación WebGL ({summary.result}). Revisa Console y Editor.log. Salida: {outputDirectory}");
         }
+    }
+
+    private static void EnsureAtlasWorldRouter()
+    {
+        const string atlasPath = "Assets/GAME/SCENES/Mapa.unity";
+        var atlas = EditorSceneManager.OpenScene(atlasPath, OpenSceneMode.Single);
+        if (Object.FindFirstObjectByType<TermometroTierra.AtlasMenuController>(FindObjectsInactive.Include) != null)
+            return;
+
+        var router = new GameObject("WorldParameterRouter");
+        Undo.RegisterCreatedObjectUndo(router, "Add atlas world router");
+        Undo.AddComponent<TermometroTierra.AtlasMenuController>(router);
+        EditorSceneManager.MarkSceneDirty(atlas);
+        EditorSceneManager.SaveScene(atlas);
+        Debug.Log("[Termómetro] Atlas: añadido WorldParameterRouter para abrir la misión solicitada por la URL.");
     }
 }
