@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce7ec76a5f3ba794890a9219fb8201d1, type: 3}
+  m_Name: NativeForestTree
+  m_EditorClassIdentifier: Assembly-CSharp::PlantData
+  displayName: "\xC1rbol nativo"
+  seedSprite: {fileID: 21300000, guid: 994a731f6d78c404294435e392e5eeb7, type: 3}
+  sproutSprite: {fileID: 21300000, guid: 27552f62104c8b447982a3372f6dbe20, type: 3}
+  youngTreeSprite: {fileID: 21300000, guid: 9ff26eb0a2d562641afef9fd42dd81e7, type: 3}
+  matureTreeSprite: {fileID: 21300000, guid: b15559444516b6149b3f3c2d6c524846, type: 3}
+  ecologicalRole: "Aporta cobertura, conecta h\xE1bitats y ayuda a proteger el suelo
+    de la ladera."

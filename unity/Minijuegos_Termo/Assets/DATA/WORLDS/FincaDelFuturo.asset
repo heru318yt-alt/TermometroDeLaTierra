@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 168f07845447d224f8fe583608bc9db3, type: 3}
+  m_Name: FincaDelFuturo
+  m_EditorClassIdentifier: Assembly-CSharp::MapWorldData
+  number: 5
+  worldName: La finca del futuro
+  subtitle: Cuida el suelo y administra cada gota.
+  description: "Relaciona los cultivos con el suelo, la rotaci\xF3n y el uso del
+    agua para obtener una cosecha responsable."
+  sceneName: FincaDelFuturo
+  icon: {fileID: 21300000, guid: d10f10745b46fd743a5290be3411b3e3, type: 3}
+  accentColor: {r: 0.5, g: 0.66, b: 0.34, a: 1}

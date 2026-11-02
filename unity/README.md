@@ -5,6 +5,7 @@ Esta carpeta reúne la parte hecha en Unity y su relación con la página web.
 ## Qué abrir
 
 - **Proyecto editable:** `TermometroMinijuegos/` — ábrelo desde Unity Hub.
+- **Reconstrucción Unity verificada:** `Minijuegos_Termo/` — proyecto independiente con las seis escenas, assets originales seleccionados, datos modulares y salida WebGL.
 - **Escena de entrada:** `TermometroMinijuegos/Assets/Scenes/Inicio.unity`.
 - **Misiones 2D:** `Energia`, `Industria`, `Movilidad`, `Bosques` y `Agricultura`.
 - **Juego e interacciones:** `TermometroMinijuegos/Assets/Scripts/TermometroMinijuegos.cs`.
@@ -27,3 +28,5 @@ El personaje Terra, los paisajes y los iconos son ilustraciones originales 2D ge
 Unity crea `Library/`, `Logs/` y `UserSettings/` al abrir el proyecto. Son cachés locales ignoradas por Git; no hace falta ordenarlas ni subirlas.
 
 Para requisitos, versión de Unity, instalación de WebGL y ejecución por línea de comandos, consulta [la guía del proyecto](TermometroMinijuegos/README.md).
+
+El proyecto `Minijuegos_Termo/` se conserva separado para no alterar el proyecto que usa actualmente la página. Su informe está en `Minijuegos_Termo/Assets/DOCUMENTATION/VALIDATION_REPORT.md` y el build probado en `Minijuegos_Termo/Build/WebGL/`.

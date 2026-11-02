@@ -44,6 +44,7 @@ src/
   styles.css                  Estilos compartidos y reglas responsive
 unity/README.md               Mapa y flujo de trabajo de la parte Unity
 unity/TermometroMinijuegos/    Proyecto Unity 6, escena, tooling y C#
+unity/Minijuegos_Termo/        Proyecto Unity 6 verificado con las seis escenas y build WebGL
 public/unity-minijuegos/       index.html + archivos del build Unity WebGL
 ```
 
