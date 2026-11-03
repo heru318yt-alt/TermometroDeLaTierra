@@ -10,7 +10,7 @@ export function FactorsPage() {
     </PageIntro>
 
     <nav className="factor-index" aria-label="Los cinco factores">
-      {factors.map(factor => <a key={factor.id} href={`#factor-${factor.id}`}><span>{factor.number}</span><strong>{factor.title}</strong><i aria-hidden="true">↓</i></a>)}
+      {factors.map(factor => <a key={factor.id} href={`#factor-${factor.id}`} data-sfx="open"><span>{factor.number}</span><strong>{factor.title}</strong><i aria-hidden="true">↓</i></a>)}
     </nav>
 
     <section className="factors-intro" aria-labelledby="factors-intro-title">

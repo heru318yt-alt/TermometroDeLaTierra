@@ -1,0 +1,148 @@
+{
+  "title": "Explorador climático · Termómetro de la Tierra",
+  "scrollWidth": 375,
+  "clientWidth": 390,
+  "scrollHeight": 5553,
+  "overflow": [
+    {
+      "tag": "svg",
+      "className": "",
+      "width": 640,
+      "right": 695,
+      "client": 390
+    },
+    {
+      "tag": "rect",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 600,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 609,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 595,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 605,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 595,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 605,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 595,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "g",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    },
+    {
+      "tag": "line",
+      "className": "",
+      "width": 583,
+      "right": 679,
+      "client": 390
+    }
+  ]
+}

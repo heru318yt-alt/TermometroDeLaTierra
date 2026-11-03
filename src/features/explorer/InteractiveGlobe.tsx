@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import landPaths from '../../assets/world-land.json'
+import { playSfx } from '../audio/sfx'
 
-type Props = { color: string; label: string; anomaly: string }
+type Props = { color: string; label: string; anomaly: string; onInteract?: () => void }
 type Drag = { x: number; y: number; longitude: number; tilt: number }
 
 const sourceWidth = 720
@@ -96,7 +97,7 @@ function renderGlobe(canvas: HTMLCanvasElement, mask: Uint8Array, color: string,
   context.stroke()
 }
 
-export function InteractiveGlobe({ color, label, anomaly }: Props) {
+export function InteractiveGlobe({ color, label, anomaly, onInteract }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const maskRef = useRef<Uint8Array | null>(null)
   const dragRef = useRef<Drag | null>(null)
@@ -125,6 +126,8 @@ export function InteractiveGlobe({ color, label, anomaly }: Props) {
   const startDrag = (event: PointerEvent<HTMLCanvasElement>) => {
     dragRef.current = { x: event.clientX, y: event.clientY, longitude, tilt }
     event.currentTarget.setPointerCapture(event.pointerId)
+    playSfx('map')
+    onInteract?.()
   }
   const moveDrag = (event: PointerEvent<HTMLCanvasElement>) => {
     const drag = dragRef.current
@@ -134,16 +137,16 @@ export function InteractiveGlobe({ color, label, anomaly }: Props) {
   }
   const endDrag = () => { dragRef.current = null }
   const rotateByKey = (event: KeyboardEvent<HTMLCanvasElement>) => {
-    if (event.key === 'ArrowLeft') { event.preventDefault(); setLongitude(value => value - 12) }
-    else if (event.key === 'ArrowRight') { event.preventDefault(); setLongitude(value => value + 12) }
-    else if (event.key === 'ArrowUp') { event.preventDefault(); setTilt(value => Math.min(48, value + 8)) }
-    else if (event.key === 'ArrowDown') { event.preventDefault(); setTilt(value => Math.max(-48, value - 8)) }
+    if (event.key === 'ArrowLeft') { event.preventDefault(); setLongitude(value => value - 12); playSfx('map'); onInteract?.() }
+    else if (event.key === 'ArrowRight') { event.preventDefault(); setLongitude(value => value + 12); playSfx('map'); onInteract?.() }
+    else if (event.key === 'ArrowUp') { event.preventDefault(); setTilt(value => Math.min(48, value + 8)); playSfx('map'); onInteract?.() }
+    else if (event.key === 'ArrowDown') { event.preventDefault(); setTilt(value => Math.max(-48, value - 8)); playSfx('map'); onInteract?.() }
   }
 
   return <div className="globe-interaction">
     <canvas ref={canvasRef} className="world-globe" width={globeSize} height={globeSize}
       role="img" tabIndex={0} aria-label={`Globo giratorio, ${label}: ${anomaly}. La anomalía se muestra igual en todo el océano, no es un mapa regional.`}
       onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={rotateByKey} />
-    <div className="globe-help"><span>Arrastra para girar · usa las flechas del teclado</span><button type="button" onClick={() => { setLongitude(-70); setTilt(8) }}>Restablecer vista</button></div>
+    <div className="globe-help"><span>Arrastra para girar · usa las flechas del teclado</span><button type="button" data-sfx="map" onClick={() => { setLongitude(-70); setTilt(8); onInteract?.() }}>Restablecer vista</button></div>
   </div>
 }

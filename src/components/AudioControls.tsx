@@ -1,8 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAudio } from '../features/audio/AudioProvider'
 
+type ChannelProps = {
+  label: string
+  description: string
+  enabled: boolean
+  volume: number
+  onToggle: () => void
+  onVolume: (value: number) => void
+  disabled: boolean
+}
+
+function SpeakerIcon({ muted, on }: { muted: boolean; on: boolean }) {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" className="speaker-icon">
+    <path d="M4 9.3h3.2L12 5.1v13.8l-4.8-4.2H4z" fill="currentColor" />
+    {muted ? <path d="m16 9 5 6m0-6-5 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /> : <>
+      <path d="M15.4 9.1a4.2 4.2 0 0 1 0 5.8M18.2 6.7a7.5 7.5 0 0 1 0 10.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity={on ? 1 : .38} />
+    </>}
+  </svg>
+}
+
+function Channel({ label, description, enabled, volume, onToggle, onVolume, disabled }: ChannelProps) {
+  return <div className={`audio-channel${enabled ? ' is-on' : ''}`}>
+    <div className="audio-channel-head">
+      <div><strong>{label}</strong><small>{description}</small></div>
+      <button type="button" role="switch" aria-checked={enabled} className="audio-switch" onClick={onToggle} disabled={disabled}>
+        {enabled ? 'Sí' : 'No'}
+      </button>
+    </div>
+    <label className="audio-range">Volumen <output>{volume}%</output>
+      <input type="range" min="0" max="100" step="1" value={volume} disabled={disabled} onChange={event => onVolume(Number(event.target.value))} aria-label={`Volumen de ${label.toLowerCase()}`} />
+    </label>
+  </div>
+}
+
 export function AudioControls() {
-  const { enabled, muted, music, effects, setEnabled, setMuted, setMusic, setEffects, playEffect } = useAudio()
+  const {
+    enabled, muted, music, effects, ambient, musicOn, effectsOn, ambientOn,
+    setEnabled, setMuted, setMusic, setEffects, setAmbient,
+    setMusicOn, setEffectsOn, setAmbientOn, playEffect,
+  } = useAudio()
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
@@ -25,27 +62,28 @@ export function AudioControls() {
   }, [open])
 
   return <div className="audio-dock" ref={root}>
-    <button ref={trigger} type="button" className={`audio-trigger${enabled ? ' is-on' : ''}`} aria-expanded={open} aria-controls="audio-panel" onClick={() => setOpen(value => !value)}>
-      <span className="audio-bars" aria-hidden="true"><i /><i /><i /></span>
+    <button ref={trigger} type="button" className={`audio-trigger${enabled ? ' is-on' : ''}${muted ? ' is-muted' : ''}`} aria-expanded={open} aria-controls="audio-panel" aria-label={`Sonido: ${status}`} onClick={() => setOpen(value => !value)}>
+      <SpeakerIcon muted={muted} on={enabled && !muted} />
       <span className="audio-label">Sonido</span>
       <small>{status}</small>
     </button>
-    {open && <div id="audio-panel" className="audio-panel">
-      <div className="audio-panel-head"><span>PAISAJE SONORO</span><span className="audio-status-dot" aria-hidden="true" /></div>
-      <button type="button" className={`audio-power${enabled ? ' is-on' : ''}`} aria-pressed={enabled} onClick={() => setEnabled(!enabled)}>
-        {enabled ? 'Desactivar audio' : 'Activar audio'}
-      </button>
-      <button type="button" className="audio-mute" aria-pressed={muted} disabled={!enabled} onClick={() => setMuted(!muted)}>
-        {muted ? 'Quitar silencio' : 'Silenciar'}
-      </button>
-      <label className="audio-range">Música <output>{music}%</output>
-        <input type="range" min="0" max="100" step="1" value={music} disabled={!enabled} onChange={event => setMusic(Number(event.target.value))} />
-      </label>
-      <label className="audio-range">Efectos <output>{effects}%</output>
-        <input type="range" min="0" max="100" step="1" value={effects} disabled={!enabled} onChange={event => setEffects(Number(event.target.value))} />
-      </label>
-      <button type="button" className="audio-test" disabled={!enabled || muted} onClick={() => playEffect('confirm')}>Probar efecto</button>
-      <p>Audio sintetizado en el navegador. Nunca se reproduce antes de activarlo.</p>
+    {open && <div id="audio-panel" className="audio-panel" role="region" aria-label="Configuración de sonido">
+      <div className="audio-panel-head"><span>PAISAJE SONORO</span><span className={`audio-status-dot${enabled && !muted ? ' is-live' : ''}`} aria-hidden="true" /></div>
+      <div className="audio-master">
+        <button type="button" className={`audio-power${enabled ? ' is-on' : ''}`} aria-pressed={enabled} onClick={() => setEnabled(!enabled)}>
+          {enabled ? 'Desactivar audio' : 'Activar audio'}
+        </button>
+        <button type="button" className="audio-mute" aria-pressed={muted} disabled={!enabled} onClick={() => setMuted(!muted)}>
+          {muted ? 'Quitar silencio' : 'Silenciar todo'}
+        </button>
+      </div>
+      <div className="audio-channels">
+        <Channel label="Música" description="Fondo armónico" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
+        <Channel label="Efectos" description="Clics y acciones" enabled={effectsOn} volume={effects} onToggle={() => setEffectsOn(!effectsOn)} onVolume={setEffects} disabled={!enabled} />
+        <Channel label="Ambiente" description="Aire y paisaje" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
+      </div>
+      <button type="button" className="audio-test" disabled={!enabled || muted || !effectsOn} onClick={() => playEffect('adventure')}>Probar un efecto</button>
+      <p className="audio-note">Audio sintetizado en el navegador, sin archivos externos. Nada suena antes de que lo actives. Tus volúmenes se guardan para la próxima visita.</p>
     </div>}
   </div>
 }

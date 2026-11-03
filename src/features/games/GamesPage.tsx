@@ -71,7 +71,7 @@ export function GamesPage() {
           <p className="game-world-description">{game.description}</p>
           <div className="game-world-purpose"><span>PROPÓSITO EDUCATIVO</span><p>{game.purpose}</p></div>
           <blockquote>{game.question}</blockquote>
-          <button type="button" className="world-play-button" onClick={() => play(game.id)} aria-label={`Jugar ${game.title}`}>Jugar <span aria-hidden="true">→</span></button>
+          <button type="button" className="world-play-button" data-sfx="adventure" onClick={() => play(game.id)} aria-label={`Jugar ${game.title}`}>Jugar <span aria-hidden="true">→</span></button>
         </div>
       </article>)}</div>
     </section>

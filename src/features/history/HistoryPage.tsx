@@ -35,7 +35,7 @@ export function HistoryPage() {
       </div>
 
       <nav className="history-period-nav" aria-label="Períodos de la historia climática">
-        {historicalPeriods.map((item, index) => <button key={item.start} type="button" className={periodIndex === index ? 'is-active' : ''} aria-pressed={periodIndex === index} onClick={() => selectPeriod(index)}>
+        {historicalPeriods.map((item, index) => <button key={item.start} type="button" data-sfx="open" className={periodIndex === index ? 'is-active' : ''} aria-pressed={periodIndex === index} onClick={() => selectPeriod(index)}>
           <span>{item.label}</span><small>{item.events.length} {item.events.length === 1 ? 'hito' : 'hitos'}</small>
         </button>)}
       </nav>
@@ -50,7 +50,7 @@ export function HistoryPage() {
         </aside>
 
         <div className="history-events" aria-label={`Hitos del período ${period.label}`}>
-          {period.events.map((item, index) => <button key={`${item.year}-${item.title}`} type="button" className={`history-event ${eventIndex === index ? 'is-selected' : ''}`} aria-pressed={eventIndex === index} onClick={() => setEventIndex(index)}>
+          {period.events.map((item, index) => <button key={`${item.year}-${item.title}`} type="button" data-sfx="info" className={`history-event ${eventIndex === index ? 'is-selected' : ''}`} aria-pressed={eventIndex === index} onClick={() => setEventIndex(index)}>
             <span className="history-event-year">{item.year}</span><span className="history-event-dot" aria-hidden="true" /><span className="history-event-title">{item.title}</span>
           </button>)}
         </div>

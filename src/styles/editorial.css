@@ -144,13 +144,24 @@
 .factors-closing .button > span { background: #173f380d; border-left-color: #173f3822; }
 .factors-closing .text-link { color: #e6d8b7; border-color: #ffffff42; }
 
-/* Animation applied to the factor illustrations */
-.factor-illustration .art-sway { transform-origin: center; animation: sway 5.5s ease-in-out infinite; }
-.factor-illustration .art-delay { animation-delay: 1.2s; }
-.factor-illustration .art-smoke { animation: smoke 4.2s ease-out infinite; }
-.factor-illustration .art-dash { animation: dash 8s linear infinite; }
+/* Animation applied to the editorial illustrations */
+.factor-illustration .art-rotor,
+.world-illustration .art-rotor { transform-box: fill-box; transform-origin: center; animation: rotor 16s linear infinite; }
+.factor-illustration .art-sway { transform-box: fill-box; transform-origin: center; animation: sway 5.5s ease-in-out infinite; }
+.world-illustration .art-sway { transform-box: fill-box; transform-origin: center bottom; animation: sway 6s ease-in-out infinite; }
+.factor-illustration .art-delay,
+.world-illustration .art-delay { animation-delay: 1.2s; }
+.factor-illustration .art-smoke,
+.world-illustration .art-smoke { animation: smoke 4.6s ease-out infinite; }
+.factor-illustration .art-dash,
+.world-illustration .art-dash { animation: dash 9s linear infinite; }
 .factor-illustration .art-conveyor { animation: conveyor 3.6s linear infinite; }
-.factor-illustration .art-pulse { animation: pulse 5s ease-in-out infinite; }
+.factor-illustration .art-pulse,
+.world-illustration .art-pulse { animation: glow 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .factor-illustration .art-rotor,
+  .world-illustration .art-rotor { animation: none; }
+}
 
 /* MINIJUEGOS ------------------------------------------------ */
 .games-page .page-intro { border-bottom: 0; }
@@ -301,6 +312,9 @@
   .game-world { grid-template-columns: 1fr; }
   .game-world.is-reversed { grid-template-columns: 1fr; }
   .game-world.is-reversed .game-world-scene { order: 0; }
+  .game-world-scene { width: 100%; max-width: 720px; justify-self: center; }
+  .game-world-copy { width: 100%; max-width: 720px; justify-self: center; }
+  .factor-art-pane { width: 100%; max-width: 760px; margin-inline: auto; }
   .game-world-scene, .world-illustration { min-height: 260px; }
 }
 @media (max-width: 760px) {
