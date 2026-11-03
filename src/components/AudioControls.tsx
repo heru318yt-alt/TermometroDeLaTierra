@@ -78,12 +78,12 @@ export function AudioControls() {
         </button>
       </div>
       <div className="audio-channels">
-        <Channel label="Música" description="Fondo armónico" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
-        <Channel label="Efectos" description="Clics y acciones" enabled={effectsOn} volume={effects} onToggle={() => setEffectsOn(!effectsOn)} onVolume={setEffects} disabled={!enabled} />
-        <Channel label="Ambiente" description="Textura de cada lugar" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
+        <Channel label="Música" description="Armonía suave del mundo" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
+        <Channel label="Efectos" description="Sonidos distintos para cada acción" enabled={effectsOn} volume={effects} onToggle={() => setEffectsOn(!effectsOn)} onVolume={setEffects} disabled={!enabled} />
+        <Channel label="Ambiente" description="Grabación propia de cada mundo" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
       </div>
       <button type="button" className="audio-test" disabled={!enabled || muted || !effectsOn} onClick={() => playEffect('adventure')}>Probar un efecto</button>
-      <p className="audio-note">Música y ambiente cambian según la sección y el mundo. El audio se genera en esta página: nada suena antes de activarlo ni se cargan archivos externos.</p>
+      <p className="audio-note">Ambientes grabados distintos para cada mundo. Los sonidos están incluidos en la página y solo se reproducen al activar el audio.</p>
     </div>}
   </div>
 }

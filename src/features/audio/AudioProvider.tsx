@@ -7,7 +7,7 @@ type Scene = {
   name: string
   chord: readonly number[]
   brightness: number
-  ambientFrequency: number
+  ambience: string
   ambientLevel: number
 }
 
@@ -15,10 +15,21 @@ type Buses = {
   master: GainNode
   music: GainNode
   effects: GainNode
-  ambient: GainNode
 }
 
 type Voice = { oscillator: OscillatorNode; gain: GainNode }
+type SoundBuffers = Record<SoundKind, AudioBuffer | null>
+
+const emptySoundBuffers = (): SoundBuffers => ({
+  click: null, nav: null, open: null, map: null, date: null,
+  timeline: null, info: null, adventure: null,
+})
+
+const soundFiles: Record<SoundKind, string> = {
+  click: 'ui-click.ogg', nav: 'ui-click.ogg', open: 'ui-open.ogg',
+  map: 'ui-map.ogg', date: 'ui-date.ogg', timeline: 'ui-timeline.ogg',
+  info: 'ui-info.ogg', adventure: 'ui-adventure.ogg',
+}
 
 type AudioContextValue = {
   enabled: boolean
@@ -43,19 +54,19 @@ type AudioContextValue = {
 const AudioSettingsContext = createContext<AudioContextValue | null>(null)
 
 const scenes: Record<string, Scene> = {
-  home: { name: 'Puerto de observación', chord: [110, 164.81, 220, 329.63], brightness: 760, ambientFrequency: 620, ambientLevel: .9 },
-  explorer: { name: 'Mesa de observación', chord: [103.83, 155.56, 207.65, 311.13], brightness: 680, ambientFrequency: 720, ambientLevel: .72 },
-  timeline: { name: 'Sala de instrumentos', chord: [98, 146.83, 196, 293.66], brightness: 610, ambientFrequency: 470, ambientLevel: .48 },
-  history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560, ambientFrequency: 390, ambientLevel: .42 },
-  factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820, ambientFrequency: 980, ambientLevel: .8 },
-  games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900, ambientFrequency: 920, ambientLevel: .78 },
-  energy: { name: 'Viento en el parque energético', chord: [130.81, 196, 261.63, 392], brightness: 960, ambientFrequency: 1320, ambientLevel: .86 },
-  industry: { name: 'Pulso de la fábrica circular', chord: [82.41, 123.47, 164.81, 246.94], brightness: 360, ambientFrequency: 210, ambientLevel: .44 },
-  transport: { name: 'Aire de la ciudad', chord: [110, 164.81, 220, 293.66], brightness: 570, ambientFrequency: 690, ambientLevel: .72 },
-  forest: { name: 'Viento entre los bosques', chord: [130.81, 196, 261.63, 392], brightness: 1120, ambientFrequency: 1600, ambientLevel: .9 },
-  agriculture: { name: 'Brisa del campo', chord: [123.47, 185, 246.94, 329.63], brightness: 860, ambientFrequency: 1180, ambientLevel: .86 },
-  sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520, ambientFrequency: 400, ambientLevel: .42 },
-  about: { name: 'Nota de proyecto', chord: [110, 164.81, 233.08, 329.63], brightness: 700, ambientFrequency: 560, ambientLevel: .56 },
+  home: { name: 'Puerto de observación', chord: [110, 164.81, 220, 329.63], brightness: 760, ambience: 'ambience-wind-birds.ogg', ambientLevel: .92 },
+  explorer: { name: 'Mesa de observación', chord: [103.83, 155.56, 207.65, 311.13], brightness: 680, ambience: 'ambience-wind-birds.ogg', ambientLevel: .72 },
+  timeline: { name: 'Sala de instrumentos', chord: [98, 146.83, 196, 293.66], brightness: 610, ambience: 'ambience-wind-birds.ogg', ambientLevel: .48 },
+  history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42 },
+  factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820, ambience: 'ambience-wind-birds.ogg', ambientLevel: .8 },
+  games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900, ambience: 'ambience-wind-birds.ogg', ambientLevel: .78 },
+  energy: { name: 'Viento en el parque energético', chord: [130.81, 196, 261.63, 392], brightness: 960, ambience: 'ambience-wind-birds.ogg', ambientLevel: .86 },
+  industry: { name: 'Pulso de la fábrica circular', chord: [82.41, 123.47, 164.81, 246.94], brightness: 360, ambience: 'ambience-factory.ogg', ambientLevel: .52 },
+  transport: { name: 'Aire de la ciudad', chord: [110, 164.81, 220, 293.66], brightness: 570, ambience: 'ambience-city.ogg', ambientLevel: .64 },
+  forest: { name: 'Viento entre los bosques', chord: [130.81, 196, 261.63, 392], brightness: 1120, ambience: 'ambience-forest.mp3', ambientLevel: .84 },
+  agriculture: { name: 'Mañana en el campo', chord: [123.47, 185, 246.94, 329.63], brightness: 860, ambience: 'ambience-farm.ogg', ambientLevel: .76 },
+  sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42 },
+  about: { name: 'Nota de proyecto', chord: [110, 164.81, 233.08, 329.63], brightness: 700, ambience: 'ambience-wind-birds.ogg', ambientLevel: .56 },
 }
 
 const worldScenes: Record<string, Scene> = {
@@ -110,10 +121,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const contextRef = useRef<AudioContext | null>(null)
   const busesRef = useRef<Buses | null>(null)
   const voicesRef = useRef<Voice[]>([])
-  const ambientSourceRef = useRef<AudioBufferSourceNode | null>(null)
+  const ambientAudioRef = useRef<HTMLAudioElement | null>(null)
+  const soundBuffersRef = useRef<SoundBuffers>(emptySoundBuffers())
+  const soundBuffersLoadingRef = useRef(false)
   const musicLfoRef = useRef<OscillatorNode | null>(null)
   const musicFilterRef = useRef<BiquadFilterNode | null>(null)
-  const ambientFilterRef = useRef<BiquadFilterNode | null>(null)
   const lastEffectRef = useRef(0)
   const sceneRef = useRef<Scene>(sceneForPath(location.pathname, location.search))
 
@@ -131,12 +143,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       try { voice.oscillator.stop() } catch { /* already stopped */ }
     }
     voicesRef.current = []
-    try { ambientSourceRef.current?.stop() } catch { /* already stopped */ }
-    ambientSourceRef.current = null
+    ambientAudioRef.current?.pause()
+    ambientAudioRef.current?.removeAttribute('src')
+    ambientAudioRef.current?.load()
+    ambientAudioRef.current = null
+    soundBuffersRef.current = emptySoundBuffers()
+    soundBuffersLoadingRef.current = false
     try { musicLfoRef.current?.stop() } catch { /* already stopped */ }
     musicLfoRef.current = null
     musicFilterRef.current = null
-    ambientFilterRef.current = null
     contextRef.current?.close().catch(() => {})
     contextRef.current = null
     busesRef.current = null
@@ -150,32 +165,48 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const master = context.createGain()
     const musicBus = context.createGain()
     const effectsBus = context.createGain()
-    const ambientBus = context.createGain()
     const musicFilter = context.createBiquadFilter()
-    const ambientFilter = context.createBiquadFilter()
 
     musicFilter.type = 'lowpass'
     musicFilter.frequency.value = sceneRef.current.brightness
     musicFilter.Q.value = .35
-    ambientFilter.type = 'lowpass'
-    ambientFilter.frequency.value = sceneRef.current.ambientFrequency
-    ambientFilter.Q.value = .3
     master.gain.value = muted ? 0 : .86
     musicBus.gain.value = musicOn ? music / 100 * .095 : 0
     effectsBus.gain.value = effectsOn ? effects / 100 * .3 : 0
-    ambientBus.gain.value = ambientOn ? ambient / 100 * .13 * sceneRef.current.ambientLevel : 0
 
     musicBus.connect(musicFilter)
     musicFilter.connect(master)
-    ambientBus.connect(ambientFilter)
-    ambientFilter.connect(master)
     effectsBus.connect(master)
     master.connect(context.destination)
 
     contextRef.current = context
-    busesRef.current = { master, music: musicBus, effects: effectsBus, ambient: ambientBus }
+    busesRef.current = { master, music: musicBus, effects: effectsBus }
     musicFilterRef.current = musicFilter
-    ambientFilterRef.current = ambientFilter
+
+    const soundBase = `${import.meta.env.BASE_URL}audio/`
+    const soundUrl = (file: string) => new URL(`${soundBase}${file}`, window.location.origin).href
+    const ambientAudio = new Audio()
+    ambientAudio.loop = true
+    ambientAudio.preload = 'none'
+    ambientAudio.src = soundUrl(sceneRef.current.ambience)
+    ambientAudio.volume = muted || !ambientOn ? 0 : Math.min(1, ambient / 100 * .78 * sceneRef.current.ambientLevel)
+    ambientAudioRef.current = ambientAudio
+    ambientAudio.play().catch(() => {})
+
+    if (!soundBuffersLoadingRef.current) {
+      soundBuffersLoadingRef.current = true
+      const loadBuffer = async (file: string) => {
+        const response = await fetch(soundUrl(file))
+        if (!response.ok) throw new Error(`No se pudo cargar ${file}`)
+        return context.decodeAudioData(await response.arrayBuffer())
+      }
+      Promise.all(Object.entries(soundFiles).map(async ([kind, file]) => [kind, await loadBuffer(file)] as const))
+        .then(entries => {
+          if (contextRef.current === context) soundBuffersRef.current = Object.fromEntries(entries) as SoundBuffers
+        })
+        .catch(() => {})
+        .finally(() => { soundBuffersLoadingRef.current = false })
+    }
 
     const chord = sceneRef.current.chord
     chord.forEach((frequency, index) => {
@@ -200,21 +231,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     lfoDepth.connect(musicBus.gain)
     lfo.start()
     musicLfoRef.current = lfo
-
-    const noiseBuffer = context.createBuffer(1, context.sampleRate * 2.4, context.sampleRate)
-    const data = noiseBuffer.getChannelData(0)
-    let brown = 0
-    for (let index = 0; index < data.length; index++) {
-      const white = Math.random() * 2 - 1
-      brown = (brown + .018 * white) / 1.018
-      data[index] = brown * 3.2
-    }
-    const ambientSource = context.createBufferSource()
-    ambientSource.buffer = noiseBuffer
-    ambientSource.loop = true
-    ambientSource.connect(ambientFilter)
-    ambientSource.start()
-    ambientSourceRef.current = ambientSource
 
     context.resume().catch(() => {})
   }, [ambient, ambientOn, effects, effectsOn, music, musicOn, muted])
@@ -243,10 +259,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [effects, effectsOn])
 
   useEffect(() => {
-    const context = contextRef.current
-    if (!context) return
-    busesRef.current?.ambient.gain.setTargetAtTime(ambientOn ? ambient / 100 * .13 * sceneRef.current.ambientLevel : 0, context.currentTime, .08)
-  }, [ambient, ambientOn])
+    const audio = ambientAudioRef.current
+    if (!audio) return
+    audio.volume = muted || !ambientOn ? 0 : Math.min(1, ambient / 100 * .78 * sceneRef.current.ambientLevel)
+  }, [ambient, ambientOn, muted])
 
   useEffect(() => {
     try {
@@ -267,6 +283,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const now = context.currentTime
     if (now - lastEffectRef.current < .028) return
     lastEffectRef.current = now
+
+    const sample = soundBuffersRef.current[kind]
+    if (sample) {
+      const source = context.createBufferSource()
+      const output = context.createGain()
+      source.buffer = sample
+      source.playbackRate.value = kind === 'nav' ? 1.08 : 1
+      output.gain.value = kind === 'adventure' ? .82 : .72
+      source.connect(output)
+      output.connect(bus)
+      source.start(now)
+      source.addEventListener('ended', () => { source.disconnect(); output.disconnect() })
+      return
+    }
 
     const tone = (frequency: number, endFrequency: number, duration: number, type: OscillatorType = 'sine', delay = 0, level = .16) => {
       const oscillator = context.createOscillator()
@@ -351,20 +381,33 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (chord[index]) voice.oscillator.frequency.setTargetAtTime(chord[index], context.currentTime, .35)
     })
     musicFilterRef.current?.frequency.setTargetAtTime(sceneRef.current.brightness, context.currentTime, .5)
-    ambientFilterRef.current?.frequency.setTargetAtTime(sceneRef.current.ambientFrequency, context.currentTime, .8)
-    busesRef.current?.ambient.gain.setTargetAtTime(ambientOn ? ambient / 100 * .13 * sceneRef.current.ambientLevel : 0, context.currentTime, .8)
+    const ambientAudio = ambientAudioRef.current
+    if (ambientAudio) {
+      const source = new URL(`${import.meta.env.BASE_URL}audio/${sceneRef.current.ambience}`, window.location.origin).href
+      if (ambientAudio.src !== source) {
+        ambientAudio.src = source
+        ambientAudio.load()
+        ambientAudio.play().catch(() => {})
+      }
+      ambientAudio.volume = muted || !ambientOn ? 0 : Math.min(1, ambient / 100 * .78 * sceneRef.current.ambientLevel)
+    }
   }, [ambient, ambientOn, location.pathname, location.search])
 
   useEffect(() => {
     const onVisibility = () => {
       const context = contextRef.current
       if (!context) return
-      if (document.hidden) context.suspend().catch(() => {})
-      else context.resume().catch(() => {})
+      if (document.hidden) {
+        context.suspend().catch(() => {})
+        ambientAudioRef.current?.pause()
+      } else {
+        context.resume().catch(() => {})
+        if (ambientAudioRef.current && ambientOn && !muted) ambientAudioRef.current.play().catch(() => {})
+      }
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [])
+  }, [ambientOn, muted])
 
   useEffect(() => () => stopAudio(), [stopAudio])
 
