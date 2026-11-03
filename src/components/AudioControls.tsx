@@ -80,10 +80,10 @@ export function AudioControls() {
       <div className="audio-channels">
         <Channel label="Música" description="Fondo armónico" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
         <Channel label="Efectos" description="Clics y acciones" enabled={effectsOn} volume={effects} onToggle={() => setEffectsOn(!effectsOn)} onVolume={setEffects} disabled={!enabled} />
-        <Channel label="Ambiente" description="Aire y paisaje" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
+        <Channel label="Ambiente" description="Textura de cada lugar" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
       </div>
       <button type="button" className="audio-test" disabled={!enabled || muted || !effectsOn} onClick={() => playEffect('adventure')}>Probar un efecto</button>
-      <p className="audio-note">Audio sintetizado en el navegador, sin archivos externos. Nada suena antes de que lo actives. Tus volúmenes se guardan para la próxima visita.</p>
+      <p className="audio-note">Música y ambiente cambian según la sección y el mundo. El audio se genera en esta página: nada suena antes de activarlo ni se cargan archivos externos.</p>
     </div>}
   </div>
 }

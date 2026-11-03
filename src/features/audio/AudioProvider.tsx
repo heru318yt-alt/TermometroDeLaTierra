@@ -7,6 +7,8 @@ type Scene = {
   name: string
   chord: readonly number[]
   brightness: number
+  ambientFrequency: number
+  ambientLevel: number
 }
 
 type Buses = {
@@ -41,22 +43,38 @@ type AudioContextValue = {
 const AudioSettingsContext = createContext<AudioContextValue | null>(null)
 
 const scenes: Record<string, Scene> = {
-  home: { name: 'Puerto de observación', chord: [110, 164.81, 220, 329.63], brightness: 760 },
-  explorer: { name: 'Mesa de observación', chord: [103.83, 155.56, 207.65, 311.13], brightness: 680 },
-  timeline: { name: 'Sala de instrumentos', chord: [98, 146.83, 196, 293.66], brightness: 610 },
-  history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560 },
-  factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820 },
-  games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900 },
-  sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520 },
-  about: { name: 'Nota de proyecto', chord: [110, 164.81, 233.08, 329.63], brightness: 700 },
+  home: { name: 'Puerto de observación', chord: [110, 164.81, 220, 329.63], brightness: 760, ambientFrequency: 620, ambientLevel: .9 },
+  explorer: { name: 'Mesa de observación', chord: [103.83, 155.56, 207.65, 311.13], brightness: 680, ambientFrequency: 720, ambientLevel: .72 },
+  timeline: { name: 'Sala de instrumentos', chord: [98, 146.83, 196, 293.66], brightness: 610, ambientFrequency: 470, ambientLevel: .48 },
+  history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560, ambientFrequency: 390, ambientLevel: .42 },
+  factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820, ambientFrequency: 980, ambientLevel: .8 },
+  games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900, ambientFrequency: 920, ambientLevel: .78 },
+  energy: { name: 'Viento en el parque energético', chord: [130.81, 196, 261.63, 392], brightness: 960, ambientFrequency: 1320, ambientLevel: .86 },
+  industry: { name: 'Pulso de la fábrica circular', chord: [82.41, 123.47, 164.81, 246.94], brightness: 360, ambientFrequency: 210, ambientLevel: .44 },
+  transport: { name: 'Aire de la ciudad', chord: [110, 164.81, 220, 293.66], brightness: 570, ambientFrequency: 690, ambientLevel: .72 },
+  forest: { name: 'Viento entre los bosques', chord: [130.81, 196, 261.63, 392], brightness: 1120, ambientFrequency: 1600, ambientLevel: .9 },
+  agriculture: { name: 'Brisa del campo', chord: [123.47, 185, 246.94, 329.63], brightness: 860, ambientFrequency: 1180, ambientLevel: .86 },
+  sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520, ambientFrequency: 400, ambientLevel: .42 },
+  about: { name: 'Nota de proyecto', chord: [110, 164.81, 233.08, 329.63], brightness: 700, ambientFrequency: 560, ambientLevel: .56 },
 }
 
-function sceneForPath(pathname: string): Scene {
+const worldScenes: Record<string, Scene> = {
+  energia: scenes.energy,
+  industria: scenes.industry,
+  transporte: scenes.transport,
+  bosques: scenes.forest,
+  agricultura: scenes.agriculture,
+}
+
+function sceneForPath(pathname: string, search = ''): Scene {
   if (pathname.startsWith('/explorador')) return scenes.explorer
   if (pathname.startsWith('/linea-del-tiempo')) return scenes.timeline
   if (pathname.startsWith('/historia')) return scenes.history
   if (pathname.startsWith('/factores')) return scenes.factors
-  if (pathname.startsWith('/minijuegos')) return scenes.games
+  if (pathname.startsWith('/minijuegos')) {
+    const world = new URLSearchParams(search).get('world')
+    return (world && worldScenes[world]) || scenes.games
+  }
   if (pathname.startsWith('/fuentes')) return scenes.sources
   if (pathname.startsWith('/acerca')) return scenes.about
   return scenes.home
@@ -95,8 +113,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const ambientSourceRef = useRef<AudioBufferSourceNode | null>(null)
   const musicLfoRef = useRef<OscillatorNode | null>(null)
   const musicFilterRef = useRef<BiquadFilterNode | null>(null)
+  const ambientFilterRef = useRef<BiquadFilterNode | null>(null)
   const lastEffectRef = useRef(0)
-  const sceneRef = useRef<Scene>(sceneForPath(location.pathname))
+  const sceneRef = useRef<Scene>(sceneForPath(location.pathname, location.search))
 
   const [enabled, setEnabledState] = useState(false)
   const [muted, setMutedState] = useState(false)
@@ -117,6 +136,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     try { musicLfoRef.current?.stop() } catch { /* already stopped */ }
     musicLfoRef.current = null
     musicFilterRef.current = null
+    ambientFilterRef.current = null
     contextRef.current?.close().catch(() => {})
     contextRef.current = null
     busesRef.current = null
@@ -138,12 +158,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     musicFilter.frequency.value = sceneRef.current.brightness
     musicFilter.Q.value = .35
     ambientFilter.type = 'lowpass'
-    ambientFilter.frequency.value = 480
+    ambientFilter.frequency.value = sceneRef.current.ambientFrequency
     ambientFilter.Q.value = .3
     master.gain.value = muted ? 0 : .86
     musicBus.gain.value = musicOn ? music / 100 * .095 : 0
     effectsBus.gain.value = effectsOn ? effects / 100 * .3 : 0
-    ambientBus.gain.value = ambientOn ? ambient / 100 * .13 : 0
+    ambientBus.gain.value = ambientOn ? ambient / 100 * .13 * sceneRef.current.ambientLevel : 0
 
     musicBus.connect(musicFilter)
     musicFilter.connect(master)
@@ -155,6 +175,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     contextRef.current = context
     busesRef.current = { master, music: musicBus, effects: effectsBus, ambient: ambientBus }
     musicFilterRef.current = musicFilter
+    ambientFilterRef.current = ambientFilter
 
     const chord = sceneRef.current.chord
     chord.forEach((frequency, index) => {
@@ -224,7 +245,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const context = contextRef.current
     if (!context) return
-    busesRef.current?.ambient.gain.setTargetAtTime(ambientOn ? ambient / 100 * .13 : 0, context.currentTime, .08)
+    busesRef.current?.ambient.gain.setTargetAtTime(ambientOn ? ambient / 100 * .13 * sceneRef.current.ambientLevel : 0, context.currentTime, .08)
   }, [ambient, ambientOn])
 
   useEffect(() => {
@@ -321,7 +342,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [playEffect])
 
   useEffect(() => {
-    sceneRef.current = sceneForPath(location.pathname)
+    sceneRef.current = sceneForPath(location.pathname, location.search)
     const context = contextRef.current
     const voices = voicesRef.current
     if (!context || !voices.length) return
@@ -330,7 +351,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (chord[index]) voice.oscillator.frequency.setTargetAtTime(chord[index], context.currentTime, .35)
     })
     musicFilterRef.current?.frequency.setTargetAtTime(sceneRef.current.brightness, context.currentTime, .5)
-  }, [location.pathname])
+    ambientFilterRef.current?.frequency.setTargetAtTime(sceneRef.current.ambientFrequency, context.currentTime, .8)
+    busesRef.current?.ambient.gain.setTargetAtTime(ambientOn ? ambient / 100 * .13 * sceneRef.current.ambientLevel : 0, context.currentTime, .8)
+  }, [ambient, ambientOn, location.pathname, location.search])
 
   useEffect(() => {
     const onVisibility = () => {
