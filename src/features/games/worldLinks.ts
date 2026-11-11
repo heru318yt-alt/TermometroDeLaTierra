@@ -1,7 +1,16 @@
-const worldIds = new Set(['energia', 'industria', 'transporte', 'bosques', 'agricultura'])
+export const worldIds = ['energia', 'industria', 'transporte', 'bosques', 'agricultura'] as const
 
-export function isWorldId(value: string | null): value is string {
-  return value !== null && worldIds.has(value)
+export type WorldId = typeof worldIds[number]
+
+const worldIdSet = new Set<string>(worldIds)
+
+export function isWorldId(value: string | null): value is WorldId {
+  return value !== null && worldIdSet.has(value)
+}
+
+/** SPA route for one of the five worlds, used by links and deep links. */
+export function gameRoute(world: WorldId): string {
+  return `${import.meta.env.BASE_URL}minijuegos?world=${world}`
 }
 
 export function unityWorldUrl(world: string, returnToAtlas = false): string {

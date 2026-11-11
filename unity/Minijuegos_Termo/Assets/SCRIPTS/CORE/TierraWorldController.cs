@@ -39,7 +39,12 @@ namespace TermometroTierra
         {
             finished = true;
             if (missionCompleted)
+            {
                 MissionProgress.RecordCompletion(SceneManager.GetActiveScene().name);
+#if UNITY_WEBGL && !UNITY_EDITOR
+                AtlasReportMissionComplete(SceneManager.GetActiveScene().name);
+#endif
+            }
             if (resultPanel != null) resultPanel.SetActive(true);
             if (resultTitle != null) resultTitle.text = title;
             if (resultBody != null) resultBody.text = explanation;
@@ -62,6 +67,7 @@ namespace TermometroTierra
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")] private static extern void AtlasReturnToSite();
+        [DllImport("__Internal")] private static extern void AtlasReportMissionComplete(string sceneName);
 #endif
     }
 }

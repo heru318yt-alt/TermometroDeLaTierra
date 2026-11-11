@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { PageIntro } from '../../components/PageIntro'
+import { EpochPath } from '../games/EpochPath'
 import { historicalPeriods, narrativePhases } from './catalog'
 export { periods } from './catalog'
 
@@ -78,6 +79,15 @@ export function HistoryPage() {
         </li>)}
       </ol>
       <p className="history-material-note">La relación entre una actividad y una variación de temperatura requiere atribución científica. Esta sección propone un contexto, no una prueba causal.</p>
+    </section>
+
+    <section className="history-play" aria-labelledby="history-play-title">
+      <div className="history-play-head">
+        <div><p className="eyebrow">DEL RELATO AL JUEGO</p><h2 id="history-play-title">Cinco etapas, cinco decisiones.</h2></div>
+        <p>Cada bloque material de la bitácora abre un mundo interactivo. Recórrelos en orden: completar un reto desbloquea la siguiente etapa.</p>
+      </div>
+      <EpochPath label="Etapas históricas jugables" />
+      <p className="history-play-note">La primera etapa está abierta. El progreso se guarda en este navegador y puedes reiniciarlo desde Minijuegos.</p>
     </section>
 
     <section className="history-next" aria-label="Continuar el recorrido">

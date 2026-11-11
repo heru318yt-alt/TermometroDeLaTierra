@@ -1,5 +1,8 @@
+import type { MouseEvent as ReactMouseEvent } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { gameModules } from '../games/catalog'
-import { unityWorldUrl } from '../games/worldLinks'
+import { isEpochUnlocked, useCompletedEpochs } from '../games/progress'
+import { gameRoute, type WorldId } from '../games/worldLinks'
 
 const spots: Record<string, [number, number]> = {
   energia: [347, 145], industria: [488, 205], transporte: [488, 264], bosques: [130, 210], agricultura: [223, 311],
@@ -7,6 +10,15 @@ const spots: Record<string, [number, number]> = {
 
 /** Conceptual field map. It links each world; it is not a climate layer. */
 export function WorldAtlas() {
+  const navigate = useNavigate()
+  const completed = useCompletedEpochs()
+
+  function openWorld(event: ReactMouseEvent<Element>, id: WorldId) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    navigate(gameRoute(id))
+  }
+
   return <div className="atlas-spread">
     <div className="atlas-map-art">
       <svg viewBox="0 0 760 450" role="img" aria-labelledby="atlas-title atlas-desc">
@@ -37,10 +49,14 @@ export function WorldAtlas() {
         <g fontFamily="Arial,sans-serif" fontWeight="700" fontSize="11" letterSpacing="1.5" fill="#264f41"><text x="60" y="283">BOSQUE</text><text x="322" y="112">ENERGÍA</text><text x="471" y="333">MOVILIDAD</text><text x="522" y="215">INDUSTRIA</text><text x="167" y="379">AGRICULTURA</text></g>
         {gameModules.map((game, i) => {
           const [x, y] = spots[game.id]
-          return <a key={game.id} href={unityWorldUrl(game.id, true)} aria-label={`Explorar ${game.title}`}>
-            <circle cx={x} cy={y} r="21" fill="#f7efd9" stroke="#244e40" strokeWidth="3" />
-            <circle cx={x} cy={y} r="4" fill="#bd6d48" />
-            <text x={x} y={y + 5} textAnchor="middle" fontSize="12" fontWeight="700" fill="#244e40" fontFamily="Arial,sans-serif">{String(i + 1).padStart(2, '0')}</text>
+          const id = game.id as WorldId
+          const unlocked = isEpochUnlocked(id, completed)
+          const label = unlocked ? `Explorar ${game.title}` : `Explorar ${game.title}. Etapa bloqueada: completa la anterior.`
+          return <a key={game.id} href={gameRoute(id)} onClick={event => openWorld(event, id)} aria-label={label} className={unlocked ? undefined : 'is-locked'}>
+            <circle cx={x} cy={y} r="21" fill={unlocked ? '#f7efd9' : '#ded8c8'} stroke={unlocked ? '#244e40' : '#9d927b'} strokeWidth="3" />
+            <circle cx={x} cy={y} r="4" fill={unlocked ? '#bd6d48' : '#9d927b'} />
+            <text x={x} y={y + 5} textAnchor="middle" fontSize="12" fontWeight="700" fill={unlocked ? '#244e40' : '#6d6556'} fontFamily="Arial,sans-serif">{String(i + 1).padStart(2, '0')}</text>
+            {!unlocked && <text x={x} y={y + 34} textAnchor="middle" fontSize="9" fontWeight="700" fill="#7c6a4f" fontFamily="Arial,sans-serif">BLOQUEADA</text>}
           </a>
         })}
         <g transform="translate(662 84)" stroke="#f5eedc" strokeWidth="2"><circle r="29" fill="#204c40" /><path d="M0-19 6 3 0-1-6 3Z" fill="#edc16c" /><text x="0" y="44" textAnchor="middle" stroke="none" fill="#204c40" fontSize="10" fontWeight="700">N</text></g>
@@ -49,12 +65,16 @@ export function WorldAtlas() {
     </div>
     <div className="atlas-index">
       <p className="eyebrow">ÍNDICE DE CAMPO</p>
-      {gameModules.map((game, i) => <a key={game.id} href={unityWorldUrl(game.id, true)}>
-        <span>{String(i + 1).padStart(2, '0')}</span>
-        <span><strong>{game.title}</strong><small>{game.theme} · {game.era}</small></span>
-        <span aria-hidden="true">↗</span>
-      </a>)}
-      <p className="atlas-index-note">Los cinco puntos abren su minijuego directamente. No son lugares geográficos reales.</p>
+      {gameModules.map((game, i) => {
+        const id = game.id as WorldId
+        const unlocked = isEpochUnlocked(id, completed)
+        return <Link key={game.id} to={gameRoute(id)} className={unlocked ? undefined : 'is-locked'}>
+          <span>{String(i + 1).padStart(2, '0')}</span>
+          <span><strong>{game.title}</strong><small>{game.theme} · {game.era}{unlocked ? '' : ' · Bloqueada'}</small></span>
+          <span aria-hidden="true">{unlocked ? '↗' : '◼'}</span>
+        </Link>
+      })}
+      <p className="atlas-index-note">Los cinco puntos abren su etapa del recorrido. El orden se desbloquea al completar cada reto. No son lugares geográficos reales.</p>
     </div>
   </div>
 }

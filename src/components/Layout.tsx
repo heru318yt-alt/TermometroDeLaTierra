@@ -98,7 +98,7 @@ export function Layout() {
       </nav>}
     </header>
 
-    <main id="contenido" ref={main} tabIndex={-1}><Outlet /></main>
+    <main id="contenido" ref={main} tabIndex={-1}><div className="route-stage" key={location.pathname}><Outlet /></div></main>
 
     <footer className="site-footer">
       <div className="footer-inner">

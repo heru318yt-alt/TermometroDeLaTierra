@@ -1,10 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { App } from './App'
+import { completeEpoch, resetProgress } from '../features/games/progress'
 
 afterEach(cleanup)
+beforeEach(() => {
+  resetProgress()
+  window.localStorage.clear()
+})
 const setup = (path = '/') => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   return render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>)
@@ -88,46 +93,70 @@ describe('Recorrido de la aplicación', () => {
     await userEvent.click(screen.getByRole('heading', { level: 1 }))
     expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).toBeNull()
   })
-  it('recorre una historia documentada y abre cada aventura sin un segundo selector Unity', async () => {
+  it('recorre una historia documentada y abre cada etapa desde la ruta', async () => {
     const view = setup('/historia')
     expect(screen.getByRole('heading', { name: 'Seis décadas de preguntas y acuerdos' })).toBeTruthy()
     expect(screen.getByRole('link', { name: /EPA · Orígenes de la agencia/ }).getAttribute('href')).toContain('epa.gov')
     await userEvent.click(screen.getByRole('button', { name: /2010–2019/ }))
     expect(screen.getByRole('heading', { name: 'Se adopta el Acuerdo de París' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /2010–2019. Bosque guardián/ }).getAttribute('href')).toContain('world=bosques')
     view.unmount()
+
+    completeEpoch('energia')
+    completeEpoch('industria')
+    completeEpoch('transporte')
+    completeEpoch('bosques')
     setup('/minijuegos')
     const worlds = [
       ['Energía viva', 'energia'], ['Fábrica circular', 'industria'], ['Rutas que respiran', 'transporte'],
       ['Bosque guardián', 'bosques'], ['La finca del futuro', 'agricultura'],
     ]
-    expect(screen.getAllByRole('button', { name: /^Jugar / })).toHaveLength(5)
-    expect(screen.queryByTitle('Minijuegos Termómetro de la Tierra (Unity WebGL)')).toBeNull()
     for (const [title, id] of worlds) {
-      await userEvent.click(screen.getByRole('button', { name: `Jugar ${title}` }))
+      const route = screen.getByRole('list', { name: 'Ruta de las cinco etapas' })
+      await userEvent.click(within(route).getByRole('button', { name: new RegExp(title) }))
       const frame = screen.getByTitle(`Minijuego ${title} en Unity WebGL`)
       const src = frame.getAttribute('src')!
       expect(src).toContain(`world=${id}`)
       expect(src).toContain('return=')
-      expect(screen.getByRole('heading', { name: `Juega: ${title}` })).toBeTruthy()
-      await userEvent.click(screen.getByRole('button', { name: 'Volver a los mundos' }))
+      expect(screen.getByRole('heading', { name: title })).toBeTruthy()
+      await userEvent.click(screen.getByRole('button', { name: 'Volver a la ruta' }))
       expect(screen.queryByTitle(`Minijuego ${title} en Unity WebGL`)).toBeNull()
-      expect(screen.queryByRole('heading', { name: 'Elige un mundo para empezar' })).toBeTruthy()
+      expect(screen.getByText('Elige una etapa de la ruta.')).toBeTruthy()
     }
   })
+  it('mantiene cerradas las etapas siguientes y las abre al completar la anterior', async () => {
+    setup('/minijuegos')
+    const route = () => screen.getByRole('list', { name: 'Ruta de las cinco etapas' })
+    expect(within(route()).getAllByRole('button')).toHaveLength(5)
+    expect(within(route()).getByRole('button', { name: /1970–1989. Energía viva. Disponible/ })).toBeTruthy()
+    expect(within(route()).getByRole('button', { name: /1990–1999. Fábrica circular. Se abre al completar/ })).toBeTruthy()
+
+    await userEvent.click(within(route()).getByRole('button', { name: /1990–1999. Fábrica circular/ }))
+    expect(screen.getByRole('heading', { name: 'Esta etapa aún está bloqueada' })).toBeTruthy()
+    expect(screen.queryByTitle('Minijuego Fábrica circular en Unity WebGL')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: /Ir a la etapa anterior/ }))
+    expect(screen.getByTitle('Minijuego Energía viva en Unity WebGL')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Marcar reto completado' }))
+    expect(screen.getByText(/Se abrió 1990–1999: Fábrica circular/)).toBeTruthy()
+    expect(within(route()).getByRole('button', { name: /1990–1999. Fábrica circular. Disponible/ })).toBeTruthy()
+  })
   it('restaura la aventura al abrir o recargar un enlace individual', () => {
+    completeEpoch('energia')
+    completeEpoch('industria')
+    completeEpoch('transporte')
     setup('/minijuegos?world=bosques')
     const frame = screen.getByTitle('Minijuego Bosque guardián en Unity WebGL')
     expect(frame.getAttribute('src')).toContain('world=bosques')
-    expect(screen.getByRole('heading', { name: 'Juega: Bosque guardián' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Bosque guardián' })).toBeTruthy()
   })
-  it('abre cada mundo del atlas principal con su identificador y ruta de regreso', () => {
+  it('abre cada mundo del atlas principal con su identificador', () => {
     setup('/')
     const links = screen.getAllByRole('link', { name: /^Explorar / })
     expect(links).toHaveLength(5)
     for (const id of ['energia', 'industria', 'transporte', 'bosques', 'agricultura']) {
       const link = links.find(candidate => candidate.getAttribute('href')?.includes(`world=${id}`))
       expect(link?.getAttribute('href')).toContain(`world=${id}`)
-      expect(link?.getAttribute('href')).toContain('return=')
     }
   })
 })

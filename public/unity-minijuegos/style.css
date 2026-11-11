@@ -25,5 +25,7 @@ body { display: grid; place-items: center; background: #f4f1e8; }
 .atlas-return { position: absolute; z-index: 4; top: max(14px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); padding: 10px 14px; border: 1px solid #c9d8c9; border-radius: 999px; background: rgba(255, 252, 242, .94); color: #173f35; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 16px rgba(23, 63, 53, .12); }
 .atlas-return:hover, .atlas-return:focus-visible { background: #173f35; color: #fffdf5; outline: 2px solid #f0bd5b; outline-offset: 2px; }
 .atlas-return[hidden] { display: none; }
+.fullscreen-toggle { position: absolute; z-index: 4; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); display: grid; place-items: center; width: 40px; height: 40px; color: #173f35; background: rgba(255, 252, 242, .94); border: 1px solid #c9d8c9; border-radius: 50%; font-size: 17px; line-height: 1; box-shadow: 0 4px 16px rgba(23, 63, 53, .12); cursor: pointer; }
+.fullscreen-toggle:hover, .fullscreen-toggle:focus-visible { color: #fffdf5; background: #173f35; outline: 2px solid #f0bd5b; outline-offset: 2px; }
 .notice { padding: 11px 14px; border: 1px solid #e6ca79; border-radius: 8px; background: #fff4c7; color: #4b4431; font-size: 13px; }
 .notice.error { border-color: #cf755e; background: #fff0eb; color: #652c22; }
