@@ -11,7 +11,14 @@ import {
   useCompletedEpochs,
 } from './progress'
 import { WorldIllustration } from './WorldIllustration'
-import { isWorldId, unityWorldUrl, type WorldId } from './worldLinks'
+import { isWorldId, type WorldId } from './worldLinks'
+import { EnergyGame } from './energy/EnergyGame'
+import { BridgeGame } from './bridge/BridgeGame'
+import { CargoGame } from './cargo/CargoGame'
+import { ForestGame } from './forest/ForestGame'
+import { FarmGame } from './farm/FarmGame'
+import { GameFrame } from './shared/GameFrame'
+import { gameModules } from './catalog'
 
 const sceneWorlds: Record<string, WorldId> = {
   EnergiaViva: 'energia',
@@ -19,6 +26,14 @@ const sceneWorlds: Record<string, WorldId> = {
   RutasQueRespiran: 'transporte',
   BosqueGuardian: 'bosques',
   FincaDelFuturo: 'agricultura',
+}
+
+const GAMES: Record<WorldId, () => React.JSX.Element> = {
+  energia: EnergyGame,
+  industria: BridgeGame,
+  transporte: CargoGame,
+  bosques: ForestGame,
+  agricultura: FarmGame,
 }
 
 function scrollMode(): ScrollBehavior {
@@ -31,12 +46,11 @@ export function GamesPage() {
   const world = isWorldId(worldParam) ? worldParam : null
   const completed = useCompletedEpochs()
   const activeEpoch = findEpoch(world)
+  const activeGame = gameModules.find(game => game.id === world)
   const locked = activeEpoch ? !isEpochUnlocked(activeEpoch.id, completed) : false
   const upcoming = nextEpoch(completed)
   const stage = useRef<HTMLElement>(null)
-  const fullscreenFrame = useRef<HTMLDivElement>(null)
   const worldPicker = useRef<HTMLElement>(null)
-  const [isFullscreen, setIsFullscreen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
   const scrollToWorlds = useCallback(() => {
@@ -63,40 +77,12 @@ export function GamesPage() {
     })
   }
 
-  const toggleFullscreen = useCallback(async () => {
-    const target = fullscreenFrame.current
-    if (!target) return
-
-    try {
-      if (document.fullscreenElement === target) {
-        await document.exitFullscreen()
-      } else if (typeof target.requestFullscreen === 'function') {
-        await target.requestFullscreen()
-      } else {
-        setNotice('Este navegador no permite pantalla completa desde aquí. Usa la pestaña completa del juego.')
-      }
-    } catch {
-      setNotice('No se pudo activar la pantalla completa. Puedes abrir el juego en una pestaña nueva.')
-    }
-  }, [])
-
-  useEffect(() => {
-    const syncFullscreen = () => setIsFullscreen(document.fullscreenElement === fullscreenFrame.current)
-    document.addEventListener('fullscreenchange', syncFullscreen)
-    return () => document.removeEventListener('fullscreenchange', syncFullscreen)
-  }, [])
-
   useEffect(() => {
     function handleUnityMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return
 
       const data = event.data as { type?: unknown; scene?: unknown; world?: unknown } | null
       if (!data || typeof data.type !== 'string') return
-
-      if (data.type === 'termometro:toggle-fullscreen') {
-        void toggleFullscreen()
-        return
-      }
 
       if (data.type === 'termometro:mission-complete') {
         const candidate = typeof data.world === 'string' && isWorldId(data.world)
@@ -122,7 +108,7 @@ export function GamesPage() {
 
     window.addEventListener('message', handleUnityMessage)
     return () => window.removeEventListener('message', handleUnityMessage)
-  }, [returnToWorlds, toggleFullscreen])
+  }, [returnToWorlds])
 
   function markCompleted(id: WorldId) {
     const epoch = findEpoch(id)
@@ -142,13 +128,12 @@ export function GamesPage() {
 
   const previousEpoch = activeEpoch && activeEpoch.index > 0 ? gameEpochs[activeEpoch.index - 1] : undefined
   const progress = Math.round((completed.length / gameEpochs.length) * 100)
+  const ActiveGame = world ? GAMES[world] : null
 
   return <div className="games-page">
     <PageIntro number="05" title="Aprender también es jugar." eyebrow="CINCO ETAPAS · CINCO DECISIONES">
       Recorre las cinco etapas de la historia climática. Cada decisión abre el siguiente mundo y deja una consecuencia visible.
     </PageIntro>
-
-    <p className="games-rule">No hay una sola respuesta correcta. Puedes volver, probar otra estrategia y mirar qué cambia.</p>
 
     <section className="epoch-journey" id="mundos" aria-labelledby="epoch-journey-title" ref={worldPicker}>
       <div className="epoch-journey-head">
@@ -172,13 +157,10 @@ export function GamesPage() {
 
       <EpochPath current={world} onSelect={play} />
 
-      <div className="epoch-journey-foot">
-        <p>La primera etapa está abierta. Completar un reto desbloquea el siguiente; también puedes registrar el avance desde la ficha del reto.</p>
-        {completed.length > 0 && <details className="epoch-reset">
-          <summary>Reiniciar progreso</summary>
-          <div><p>Borra las etapas completadas en este navegador y vuelve a empezar por 1970.</p><button type="button" className="text-link" onClick={restartRoute}>Reiniciar la ruta</button></div>
-        </details>}
-      </div>
+      {completed.length > 0 && <details className="epoch-reset">
+        <summary>Reiniciar progreso</summary>
+        <div><p>Borra las etapas completadas en este navegador y vuelve a empezar por 1970.</p><button type="button" className="text-link" onClick={restartRoute}>Reiniciar la ruta</button></div>
+      </details>}
     </section>
 
     <section className="unity-experience" aria-labelledby="unity-heading" ref={stage}>
@@ -192,7 +174,6 @@ export function GamesPage() {
               : activeEpoch.description}</p>
           </div>
           <div className="unity-toolbar-actions">
-            {!locked && <button className="button unity-fullscreen" type="button" onClick={() => void toggleFullscreen()} aria-pressed={isFullscreen}>{isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}<span aria-hidden="true">{isFullscreen ? '×' : '⛶'}</span></button>}
             <button className="button unity-map-button" type="button" onClick={returnToWorlds}>Volver a la ruta</button>
           </div>
         </div>
@@ -208,13 +189,13 @@ export function GamesPage() {
             {previousEpoch && <button type="button" className="button" onClick={() => play(previousEpoch.id)}>Ir a la etapa anterior<span aria-hidden="true">→</span></button>}
           </div>
         </div> : <>
-          <div className="unity-frame" ref={fullscreenFrame}>
-            <iframe key={activeEpoch.id} title={`Minijuego ${activeEpoch.title} en Unity WebGL`} src={unityWorldUrl(activeEpoch.id, true)} allow="fullscreen; autoplay" allowFullScreen loading="lazy" />
-          </div>
+          {ActiveGame && <GameFrame world={activeEpoch.id} title={`Misión ${String(activeEpoch.index + 1).padStart(2, '0')} · ${activeGame?.title ?? activeEpoch.title}`}>
+            <ActiveGame />
+          </GameFrame>}
+
           <div className="mission-console">
             <p className="unity-note">Los indicadores de cada partida son valores didácticos del escenario; no representan mediciones de emisiones ni datos NASA GISTEMP.</p>
             <div className="mission-console-actions">
-              <a className="text-link" href={unityWorldUrl(activeEpoch.id, true)} target="_blank" rel="noreferrer">Abrir en una pestaña ↗</a>
               <button type="button" className="text-link" onClick={() => markCompleted(activeEpoch.id)}>Marcar reto completado</button>
             </div>
           </div>
@@ -234,10 +215,12 @@ export function GamesPage() {
         </>}
 
       </> : <div className="unity-empty">
-        <span>ETAPA 01 · 1970—1989 · ENERGÍA</span>
+        <span>ETAPA {String((upcoming ?? gameEpochs[0]).index + 1).padStart(2, '0')} · {(upcoming ?? gameEpochs[0]).range} · {(upcoming ?? gameEpochs[0]).theme.toUpperCase()}</span>
         <strong id="unity-heading">Elige una etapa de la ruta.</strong>
-        <p>La primera etapa ya está disponible. Las demás se abren al completar la anterior.</p>
-        <button type="button" className="button" onClick={() => play('energia')}>Abrir Energía viva<span aria-hidden="true">→</span></button>
+        <p>{upcoming
+          ? `${upcoming.range} · ${upcoming.title} ya está disponible. Las demás se abren al completar la anterior.`
+          : 'Las cinco etapas están completas. Puedes repetir cualquiera desde la ruta.'}</p>
+        <button type="button" className="button" onClick={() => play(upcoming?.id ?? 'energia')}>Abrir {(upcoming ?? gameEpochs[0]).title}<span aria-hidden="true">→</span></button>
       </div>}
       {notice && <div className="epoch-notice" role="status" aria-live="polite"><span>{notice}</span><div className="epoch-notice-actions">{upcoming && <button type="button" onClick={() => { setNotice(null); play(upcoming.id) }}>Abrir siguiente etapa</button>}<button type="button" className="epoch-notice-close" aria-label="Cerrar aviso" onClick={() => setNotice(null)}>×</button></div></div>}
     </section>

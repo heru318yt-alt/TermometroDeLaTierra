@@ -23,12 +23,15 @@ type SoundBuffers = Record<SoundKind, AudioBuffer | null>
 const emptySoundBuffers = (): SoundBuffers => ({
   click: null, nav: null, open: null, map: null, date: null,
   timeline: null, info: null, adventure: null,
+  gain: null, loss: null, combo: null, warn: null, win: null,
 })
 
 const soundFiles: Record<SoundKind, string> = {
   click: 'ui-click.ogg', nav: 'ui-click.ogg', open: 'ui-open.ogg',
   map: 'ui-map.ogg', date: 'ui-date.ogg', timeline: 'ui-timeline.ogg',
   info: 'ui-info.ogg', adventure: 'ui-adventure.ogg',
+  gain: 'ui-info.ogg', loss: 'ui-map.ogg', combo: 'ui-adventure.ogg',
+  warn: 'ui-click.ogg', win: 'ui-adventure.ogg',
 }
 
 type AudioContextValue = {

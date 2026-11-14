@@ -17,10 +17,17 @@ namespace TermometroTierra.Energia
         private int cleanRounds;
         private int servedRounds;
         private bool saving;
+        // Reserva de combustible fósil de la red. No se recupera: cada ronda
+        // exige más energía y la quema crece, así que la partida siempre
+        // termina cuando la reserva llega a cero.
+        private int fuel = StartingFuel;
+
+        private const int StartingFuel = 120;
 
         private void Start()
         {
             if (resultPanel != null) resultPanel.SetActive(false);
+            fuel = StartingFuel;
             for (int i = 0; i < connected.Length; i++)
             {
                 connected[i] = true;
@@ -28,7 +35,7 @@ namespace TermometroTierra.Energia
                     districts[i].SetSupplied(true);
             }
             Refresh();
-            SetStatus("Elige hasta tres fuentes. Conecta los tres sectores y cubre la demanda sin disparar las emisiones.");
+            SetStatus("Elige hasta tres fuentes. Conecta los tres sectores y cubre la demanda: el combustible fósil se agota y cada ronda cuesta más.");
         }
 
         public override void HandleAction(string action, int value)
@@ -90,27 +97,43 @@ namespace TermometroTierra.Energia
 
         private void EvaluateRound()
         {
-            int demand = 4 + round - (saving ? 1 : 0);
+            int demand = Demand();
             bool served = AllDistrictsConnected() && Output() >= demand;
             bool clean = served && Carbon() <= 7;
             if (served) servedRounds++;
             if (clean) cleanRounds++;
             string response = served ? "Los tres sectores reciben energía." : "La red dejó sectores sin conexión o produjo menos de lo que la ciudad necesita.";
             response += clean ? " La mezcla se mantiene en un impacto moderado." : " Revisa la demanda, el ahorro y las fuentes de respaldo.";
-            SetStatus(response);
+            int burn = FuelBurn();
+            fuel = Mathf.Max(0, fuel - burn);
+            SetStatus(response + " Combustible consumido: " + burn + " unidades.");
             if (audioManager != null) audioManager.Play(served ? "success" : "error");
-            if (round >= 3)
+            if (fuel <= 0)
             {
-                if (cleanRounds >= 2 && servedRounds == 3)
-                    ShowResult("¡La ciudad pasó la noche iluminada!", "Combinaste fuentes, cubriste la demanda y redujiste la huella en " + cleanRounds + " de 3 rondas.", true);
-                else if (servedRounds >= 2)
-                    ShowResult("La red funcionó; aún puede respirar mejor", "La ciudad recibió electricidad en " + servedRounds + " rondas. Reduce emisiones con ahorro y una mezcla más limpia.", false);
-                else
-                    ShowResult("La ciudad necesita otra mezcla", "Solo " + servedRounds + " rondas cubrieron los sectores. Ajusta la generación y vuelve a conectar hogares, escuela y clínica.", false, false);
+                ShowResult("La red se quedó sin combustible",
+                    "La ciudad estuvo iluminada " + servedRounds + " rondas. Cada ronda exigió más energía y la reserva fósil cayó más rápido hasta agotarse: sin combustible no hay respaldo para seguir cubriendo la demanda." +
+                    (cleanRounds > 0 ? " Las rondas con menor huella retrasaron el final." : ""),
+                    false);
                 return;
             }
             round++;
             ResetRound();
+        }
+
+        /** La demanda crece aunque el ahorro la contenga un poco. */
+        private int Demand() => 4 + round - (saving ? 1 : 0);
+
+        /**
+         * Cada ronda quema más combustible: primero la demanda sube y luego la
+         * propia reserva escasea. Una red más fósil acelera la caída; ahorrar
+         * la retrasa, pero no la evita.
+         */
+        private int FuelBurn()
+        {
+            int baseBurn = 8 + (round - 1) * 4;
+            int fossilPenalty = Carbon() / 3;
+            int savingBonus = saving ? 2 : 0;
+            return Mathf.Max(1, baseBurn + fossilPenalty - savingBonus);
         }
 
         private void ResetRound()
@@ -127,8 +150,8 @@ namespace TermometroTierra.Energia
 
         private void Refresh()
         {
-            int demand = 4 + round - (saving ? 1 : 0);
-            SetRound("RONDA " + round + " / 3");
+            int demand = Demand();
+            SetRound("RONDA " + round + " · COMBUSTIBLE " + fuel);
             if (demandText != null) demandText.text = "DEMANDA / GENERACIÓN\n" + demand + " / " + Output() + " kW";
             if (carbonText != null) carbonText.text = "HUELLA CO2\n" + Carbon() + " kg";
             if (saveText != null) saveText.text = saving ? "AHORRO\nACTIVADO" : "AHORRO\nINACTIVO";
@@ -136,7 +159,8 @@ namespace TermometroTierra.Energia
                 evaluateButton.interactable = SelectedCount() > 0 && AllDistrictsConnected();
 
             string supply = Output() >= demand ? "generación suficiente" : "falta generación";
-            SetStatus("FUENTES " + SelectedCount() + "/3 · SECTORES " + ConnectedCount() + "/3 · " + supply +
+            string warning = fuel <= 30 ? " · QUEDA POCO COMBUSTIBLE" : "";
+            SetStatus("FUENTES " + SelectedCount() + "/3 · SECTORES " + ConnectedCount() + "/3 · " + supply + warning +
                       "\n" + SelectedSourceSummary());
         }
 

@@ -8,12 +8,12 @@ import { WorldAtlas } from './WorldAtlas'
 const monthFormat = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 const numberFormat = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 })
 const chapters = [
-  { number: '01', to: '/explorador', title: 'Explorador climático', copy: 'La señal global, el planeta y la lectura de una fecha.', meta: 'Mapa · indicador · comparación' },
-  { number: '02', to: '/linea-del-tiempo', title: 'Línea del tiempo', copy: 'Recorre la serie histórica y observa cómo cambia la señal.', meta: 'Serie · umbrales · reproducción' },
-  { number: '03', to: '/historia', title: 'Historia del clima', copy: 'Seis décadas de ciencia, acuerdos y decisiones.', meta: '1970—2025 · fuentes' },
-  { number: '04', to: '/factores', title: 'Factores del cambio climático', copy: 'Energía, industria, movilidad, bosques y alimentación.', meta: 'Cinco fuerzas · datos' },
-  { number: '05', to: '/minijuegos', title: 'Minijuegos', copy: 'Cinco mundos para decidir, probar y volver a intentar.', meta: 'Unity · cinco misiones' },
-  { number: '06', to: '/fuentes', title: 'Fuentes y metodología', copy: 'De dónde viene cada dato y qué no puede afirmarse.', meta: 'NASA · IPCC · OWID' },
+  { number: '01', to: '/explorador', title: 'Explorador climático', copy: 'La señal global, el planeta y la lectura de una fecha.' },
+  { number: '02', to: '/linea-del-tiempo', title: 'Línea del tiempo', copy: 'La serie histórica y el mapa, sincronizados en una fecha.' },
+  { number: '03', to: '/historia', title: 'Historia del clima', copy: 'Seis décadas de ciencia, acuerdos y decisiones.' },
+  { number: '04', to: '/factores', title: 'Factores del cambio climático', copy: 'Energía, industria, movilidad, bosques y alimentación.' },
+  { number: '05', to: '/minijuegos', title: 'Minijuegos', copy: 'Cinco misiones para decidir, probar y volver a intentar.' },
+  { number: '06', to: '/fuentes', title: 'Fuentes y metodología', copy: 'De dónde viene cada dato y qué no puede afirmarse.' },
 ]
 
 function SignalSparkline() {
@@ -106,7 +106,6 @@ export function HomePage() {
           <span className="chapter-row-number">{chapter.number}</span>
           <span className="chapter-row-title">{chapter.title}</span>
           <span className="chapter-row-copy">{chapter.copy}</span>
-          <span className="chapter-row-meta">{chapter.meta}</span>
           <span className="chapter-row-arrow" aria-hidden="true">↗</span>
         </Link>)}
       </div>
@@ -120,20 +119,5 @@ export function HomePage() {
       </div>
       <WorldAtlas />
     </section>
-
-    <section className="home-closing" aria-labelledby="home-closing-title">
-      <div><p className="eyebrow">ANTES DE SEGUIR</p><h2 id="home-closing-title">Una curva no explica el mundo por sí sola.</h2></div>
-      <p>La serie de NASA muestra una señal global. La historia y los factores añaden el contexto que permite interpretarla. Y los minijuegos convierten esas tensiones en decisiones que puedes probar.</p>
-      <div className="home-closing-links">
-        <Link className="button" to="/linea-del-tiempo">Recorrer la historia climática <span aria-hidden="true">↗</span></Link>
-        <Link className="text-link" to="/minijuegos">Entrar a los cinco mundos →</Link>
-      </div>
-    </section>
-
-    <aside className="development-note">
-      <span className="small-dot" />
-      <p><strong>Un proyecto en construcción.</strong> Explora la serie global de NASA con visualizaciones sincronizadas. Seguimos ampliando las capas climáticas regionales y la documentación de cada factor.</p>
-      <Link to="/acerca">Acerca del proyecto ↗</Link>
-    </aside>
   </div>
 }

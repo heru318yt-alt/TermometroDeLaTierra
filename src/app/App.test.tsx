@@ -99,7 +99,7 @@ describe('Recorrido de la aplicación', () => {
     expect(screen.getByRole('link', { name: /EPA · Orígenes de la agencia/ }).getAttribute('href')).toContain('epa.gov')
     await userEvent.click(screen.getByRole('button', { name: /2010–2019/ }))
     expect(screen.getByRole('heading', { name: 'Se adopta el Acuerdo de París' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: /2010–2019. Bosque guardián/ }).getAttribute('href')).toContain('world=bosques')
+    expect(screen.getByRole('link', { name: /2010–2019. Guardabosques/ }).getAttribute('href')).toContain('world=bosques')
     view.unmount()
 
     completeEpoch('energia')
@@ -108,19 +108,16 @@ describe('Recorrido de la aplicación', () => {
     completeEpoch('bosques')
     setup('/minijuegos')
     const worlds = [
-      ['Energía viva', 'energia'], ['Fábrica circular', 'industria'], ['Rutas que respiran', 'transporte'],
-      ['Bosque guardián', 'bosques'], ['La finca del futuro', 'agricultura'],
+      ['Mantén la red'], ['Puente de materiales'], ['Carga entre ciudades'],
+      ['Guardabosques'], ['Finca equilibrada'],
     ]
-    for (const [title, id] of worlds) {
+    for (const [index, [title]] of worlds.entries()) {
       const route = screen.getByRole('list', { name: 'Ruta de las cinco etapas' })
       await userEvent.click(within(route).getByRole('button', { name: new RegExp(title) }))
-      const frame = screen.getByTitle(`Minijuego ${title} en Unity WebGL`)
-      const src = frame.getAttribute('src')!
-      expect(src).toContain(`world=${id}`)
-      expect(src).toContain('return=')
-      expect(screen.getByRole('heading', { name: title })).toBeTruthy()
+      expect(screen.getByRole('heading', { level: 2, name: title })).toBeTruthy()
+      expect(screen.getByText(`Misión ${String(index + 1).padStart(2, '0')} · ${title}`)).toBeTruthy()
       await userEvent.click(screen.getByRole('button', { name: 'Volver a la ruta' }))
-      expect(screen.queryByTitle(`Minijuego ${title} en Unity WebGL`)).toBeNull()
+      expect(screen.queryByText(`Misión ${String(index + 1).padStart(2, '0')} · ${title}`)).toBeNull()
       expect(screen.getByText('Elige una etapa de la ruta.')).toBeTruthy()
     }
   })
@@ -128,27 +125,27 @@ describe('Recorrido de la aplicación', () => {
     setup('/minijuegos')
     const route = () => screen.getByRole('list', { name: 'Ruta de las cinco etapas' })
     expect(within(route()).getAllByRole('button')).toHaveLength(5)
-    expect(within(route()).getByRole('button', { name: /1970–1989. Energía viva. Disponible/ })).toBeTruthy()
-    expect(within(route()).getByRole('button', { name: /1990–1999. Fábrica circular. Se abre al completar/ })).toBeTruthy()
+    expect(within(route()).getByRole('button', { name: /1970–1989. Mantén la red. Disponible/ })).toBeTruthy()
+    expect(within(route()).getByRole('button', { name: /1990–1999. Puente de materiales. Se abre al completar/ })).toBeTruthy()
 
-    await userEvent.click(within(route()).getByRole('button', { name: /1990–1999. Fábrica circular/ }))
+    await userEvent.click(within(route()).getByRole('button', { name: /1990–1999. Puente de materiales/ }))
     expect(screen.getByRole('heading', { name: 'Esta etapa aún está bloqueada' })).toBeTruthy()
-    expect(screen.queryByTitle('Minijuego Fábrica circular en Unity WebGL')).toBeNull()
+    expect(screen.queryByText('Misión 02 · Puente de materiales')).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: /Ir a la etapa anterior/ }))
-    expect(screen.getByTitle('Minijuego Energía viva en Unity WebGL')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Mantén la red' })).toBeTruthy()
+    expect(screen.getByText('Misión 01 · Mantén la red')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Marcar reto completado' }))
-    expect(screen.getByText(/Se abrió 1990–1999: Fábrica circular/)).toBeTruthy()
-    expect(within(route()).getByRole('button', { name: /1990–1999. Fábrica circular. Disponible/ })).toBeTruthy()
+    expect(screen.getByText(/Se abrió 1990–1999: Puente de materiales/)).toBeTruthy()
+    expect(within(route()).getByRole('button', { name: /1990–1999. Puente de materiales. Disponible/ })).toBeTruthy()
   })
   it('restaura la aventura al abrir o recargar un enlace individual', () => {
     completeEpoch('energia')
     completeEpoch('industria')
     completeEpoch('transporte')
     setup('/minijuegos?world=bosques')
-    const frame = screen.getByTitle('Minijuego Bosque guardián en Unity WebGL')
-    expect(frame.getAttribute('src')).toContain('world=bosques')
-    expect(screen.getByRole('heading', { name: 'Bosque guardián' })).toBeTruthy()
+    expect(screen.getByText('Misión 04 · Guardabosques')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Guardabosques' })).toBeTruthy()
   })
   it('abre cada mundo del atlas principal con su identificador', () => {
     setup('/')

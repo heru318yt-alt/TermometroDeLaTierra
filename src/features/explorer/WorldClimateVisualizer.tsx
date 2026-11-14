@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { historicalPeriods } from '../history/catalog'
 import { useExplorer } from './ExplorerContext'
 import { anomalyColor, colorStops, formatAnomaly } from './model'
 import { InteractiveGlobe } from './InteractiveGlobe'
 
 /** The sphere deliberately uses a single global anomaly, never a country-level heat map. */
 export function WorldClimateVisualizer() {
-  const { anomaly, label, mode, data } = useExplorer()
+  const { anomaly, label, mode, data, date } = useExplorer()
+  const period = historicalPeriods.find(item => date.year >= item.start && date.year <= item.end)
   const [inspected, setInspected] = useState(false)
   const color = anomalyColor(anomaly)
   const markerPosition = anomaly === null ? 50 : (Math.max(-1, Math.min(2, anomaly)) + 1) / 3 * 100
@@ -24,6 +26,11 @@ export function WorldClimateVisualizer() {
     </div>
 
     <div className="world-map-stage">
+      <div className="world-map-year" data-testid="world-period">
+        <p className="eyebrow">AÑO EN EL MAPA</p>
+        <strong>{date.year}</strong>
+        <span>{period ? `${period.label} · ${period.name}` : 'Fuera de los períodos narrativos'}</span>
+      </div>
       <div className="map-coordinate map-coordinate-n">90° N</div>
       <div className="map-coordinate map-coordinate-s">90° S</div>
       <div className="map-coordinate map-coordinate-w">180° O</div>

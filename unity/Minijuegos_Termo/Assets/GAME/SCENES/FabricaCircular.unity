@@ -7914,7 +7914,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Selecciona y arrastra piezas \xB7 separa cinco materiales \xB7 elige un
+  m_text: "Selecciona y arrastra piezas \xB7 separa cuatro materiales \xB7 elige un
     proceso por lote"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

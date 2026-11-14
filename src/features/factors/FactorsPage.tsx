@@ -13,13 +13,6 @@ export function FactorsPage() {
       {factors.map(factor => <a key={factor.id} href={`#factor-${factor.id}`} data-sfx="open"><span>{factor.number}</span><strong>{factor.title}</strong><i aria-hidden="true">↓</i></a>)}
     </nav>
 
-    <section className="factors-intro" aria-labelledby="factors-intro-title">
-      <p className="eyebrow">CÓMO LEER ESTA SECCIÓN</p>
-      <h2 id="factors-intro-title">Una curva no basta para explicar una causa.</h2>
-      <p>Los factores se presentan por separado para poder observarlos, pero en la realidad se mezclan: la electricidad mueve fábricas, el transporte distribuye alimentos y la expansión agrícola puede presionar bosques. Las cifras de contexto proceden de fuentes sectoriales; la serie de temperatura del explorador procede de NASA GISTEMP.</p>
-      <div className="factors-intro-note"><span aria-hidden="true">↳</span><p>Este apartado no afirma que una actividad concreta haya causado una variación específica de temperatura. Para eso se necesita atribución científica, no una simple coincidencia visual.</p></div>
-    </section>
-
     <div className="factor-chapters">
       {factors.map((factor, index) => <section key={factor.id} id={`factor-${factor.id}`} className={`factor-chapter factor-${factor.id}${index % 2 ? ' is-reversed' : ''}`} aria-labelledby={`factor-title-${factor.id}`}>
         <div className="factor-art-pane">
@@ -46,7 +39,10 @@ export function FactorsPage() {
             <span>Palancas de acción</span>
             <ul>{factor.levers.map(lever => <li key={lever}>{lever}</li>)}</ul>
           </div>
-          <div className="factor-sources"><span>Fuentes de este capítulo</span>{factor.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div>
+          <details className="factor-sources">
+            <summary>Fuentes de este capítulo</summary>
+            <div className="factor-sources-links">{factor.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div>
+          </details>
         </div>
       </section>)}
     </div>

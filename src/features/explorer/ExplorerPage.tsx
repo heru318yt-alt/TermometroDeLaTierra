@@ -24,7 +24,6 @@ export function ExplorerPage() {
         <aside className="explorer-side">
           <ClimateTimeline />
           <ClimateHistoricalContext />
-          <div className="explorer-next"><p className="eyebrow">PARA VER LA CURVA COMPLETA</p><p>La línea del tiempo reúne la serie, los umbrales y la reproducción en una sola sala de instrumentos.</p><Link className="text-link" to="/linea-del-tiempo">Abrir la línea del tiempo →</Link></div>
         </aside>
       </section>
 
