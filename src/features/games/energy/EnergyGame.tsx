@@ -90,7 +90,7 @@ export function EnergyGame() {
           if (e.kind === 'carbon') layer.smoke(x, cy - 6, 6, '#7d808c')
           if (e.kind === 'gas') layer.smoke(x, cy - 6, 3, '#9aa6b8')
           v.bounce = 1; v.flash = e.kind; v.flashT = 0.5
-          playSfx('gain')
+          playSfx(e.kind === 'carbon' ? 'fuel-carbon' : e.kind === 'gas' ? 'fuel-gas' : 'gain')
         } else if (e.type === 'miss') {
           layer.ring(e.x * W, H - 26, '#ff6b6b', 12)
         } else if (e.type === 'streak') {

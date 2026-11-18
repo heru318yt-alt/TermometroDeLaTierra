@@ -70,7 +70,7 @@ export function CargoGame() {
     const can = canLaunch(s, m)
     if (!can.ok) { setMessage(can.reason ?? ''); return }
     if (p < MIN_POWER) { setMessage('Sube la potencia para lanzar.'); return }
-    launch(s, m, a, p); setMessage(''); playSfx('click'); setHud(readHud(s))
+    launch(s, m, a, p); setMessage(''); playSfx(m === 'road' ? 'launch-road' : 'launch'); setHud(readHud(s))
     fx.current.smoke(px(ORIGIN.x), py(ORIGIN.y) - 6, 2, '#eef2f7')
   }, [])
 
@@ -120,7 +120,7 @@ export function CargoGame() {
     nextRound(s)
     if (s.status === 'finished') {
       const result = summarize(s)
-      setSummary(result); setNewBest(submitBest(result.total)); setPhase('final'); playSfx(result.score > 0 ? 'win' : 'loss')
+      setSummary(result); setNewBest(submitBest(result.total)); setPhase('final'); playSfx(result.score > 0 ? 'victory' : 'loss')
       return
     }
     beginRound()

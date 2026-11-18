@@ -26,7 +26,7 @@ export function AboutPage() {
         <p className="eyebrow">ESTADO ACTUAL</p>
         <h2>Explora, compara y juega.</h2>
         <p>La aplicación conserva su navegación adaptable e integra datos globales de NASA GISTEMP v4.</p>
-        <p>El mapa, el gráfico y la línea de tiempo permiten recorrer la anomalía global; cinco minijuegos 2D en Unity proponen decisiones sobre energía, industria, movilidad, bosques y agricultura. El contexto histórico mantiene sus fuentes y notas de atribución.</p>
+        <p>El mapa, el gráfico y la línea de tiempo permiten recorrer la anomalía global; cinco minijuegos 2D en el navegador proponen decisiones sobre energía, industria, movilidad, bosques y agricultura. El contexto histórico mantiene sus fuentes y notas de atribución.</p>
         <div className="about-status-facts">
           <span><strong>01</strong>Serie global 1880–{summary.latest ? summary.latest.year : '—'}</span>
           <span><strong>05</strong>Mundos jugables</span>

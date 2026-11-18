@@ -444,11 +444,13 @@
   .hero-grid { grid-template-columns: 1fr .92fr; gap: 32px; }
   .hero-copy h1 { font-size: clamp(3rem, 6.7vw, 5rem); }
   .instrument-globe { min-height: 190px; }
-  .explorer-observation { grid-template-columns: 1fr; }
-  .explorer-side { border-top: 1px solid var(--line-dark); border-left: 0; }
   .timeline-workbench { grid-template-columns: 1fr; }
   .timeline-controls { position: static; border-right: 0; border-bottom: 1px solid var(--line-dark); }
   .timeline-context-row, .explorer-analysis { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .explorer-observation { grid-template-columns: 1fr; }
+  .explorer-side { border-top: 1px solid var(--line-dark); border-left: 0; }
 }
 @media (max-width: 860px) {
   .hero-topline span:nth-child(2) { display: none; }
@@ -506,3 +508,29 @@
   .timeline-period-facts > div:nth-child(even) { padding-left: 0; border-left: 0; }
   .timeline-chart-band, .explorer-chart-section { padding: 18px 15px; }
 }
+
+/* Inicio · accesos: una sola cuadrícula para moverse por el sitio. */
+.home-routes { width: var(--page); margin: 0 auto clamp(40px, 6vw, 72px); padding-top: clamp(28px, 4vw, 48px); }
+.home-routes-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 32px; margin-bottom: 18px; }
+.home-routes-head h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.4rem); }
+.home-routes-head p { max-width: 52ch; margin: 0; color: var(--muted-dark); font-size: .86rem; }
+.home-route-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.home-route { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto 1fr; column-gap: 14px; padding: 18px 18px 16px; color: var(--ink); text-decoration: none; background: var(--paper-3); border: 1px solid var(--line); transition: transform var(--duration) var(--ease), border-color var(--duration), box-shadow var(--duration); }
+.home-route:hover, .home-route:focus-visible { transform: translateY(-2px); border-color: var(--amber); box-shadow: 0 14px 28px -20px #12342d88; }
+.home-route:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.home-route-icon { grid-row: 1 / span 3; display: grid; place-items: center; width: 44px; height: 44px; color: var(--forest); background: #ece3cf; border-radius: 50%; }
+.home-route-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.home-route-number { color: var(--amber); font-family: var(--font-display); font-size: .86rem; font-style: italic; }
+.home-route strong { font-family: var(--font-display); font-size: 1.28rem; font-weight: 400; line-height: 1.1; }
+.home-route-copy { margin-top: 5px; color: var(--muted-dark); font-size: .8rem; line-height: 1.45; }
+.home-route-arrow { position: absolute; right: 16px; top: 16px; color: var(--amber); transition: transform var(--duration) var(--ease); }
+.home-route:hover .home-route-arrow { transform: translateX(3px); }
+.home-worlds { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; padding: 12px 14px; background: var(--forest); }
+.home-worlds-label { margin-right: 6px; color: var(--amber-bright); font-size: .62rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.home-worlds a { display: inline-flex; align-items: baseline; gap: 7px; padding: 7px 12px; color: #f4eddd; text-decoration: none; border: 1px solid #ffffff2e; border-radius: 99px; font-size: .8rem; transition: background var(--duration); }
+.home-worlds a:hover, .home-worlds a:focus-visible { background: #ffffff1c; }
+.home-worlds a:focus-visible { outline: 3px solid var(--amber-bright); outline-offset: 2px; }
+.home-worlds b { color: var(--amber-bright); font-family: var(--font-mono); font-size: .66rem; }
+.home-worlds small { color: #b9c7b3; font-size: .66rem; }
+@media (max-width: 900px) { .home-route-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .home-route-grid { grid-template-columns: 1fr; } .home-worlds small { display: none; } }

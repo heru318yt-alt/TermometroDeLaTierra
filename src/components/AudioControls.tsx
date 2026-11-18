@@ -78,7 +78,7 @@ export function AudioControls() {
         </button>
       </div>
       <div className="audio-channels">
-        <Channel label="Música" description="Armonía suave del mundo" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
+        <Channel label="Música" description="Armonía del mundo · pista propia en cada minijuego" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
         <Channel label="Efectos" description="Sonidos distintos para cada acción" enabled={effectsOn} volume={effects} onToggle={() => setEffectsOn(!effectsOn)} onVolume={setEffects} disabled={!enabled} />
         <Channel label="Ambiente" description="Grabación propia de cada mundo" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
       </div>

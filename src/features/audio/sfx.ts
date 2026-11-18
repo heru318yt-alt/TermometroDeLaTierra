@@ -1,7 +1,8 @@
 export type SoundKind = 'click' | 'nav' | 'open' | 'map' | 'date' | 'timeline' | 'info' | 'adventure'
-  | 'gain' | 'loss' | 'combo' | 'warn' | 'win'
+  | 'gain' | 'loss' | 'combo' | 'warn' | 'win' | 'victory' | 'alarm'
+  | 'fuel-carbon' | 'fuel-gas' | 'launch' | 'launch-road'
 
-const validKinds = new Set<SoundKind>(['click', 'nav', 'open', 'map', 'date', 'timeline', 'info', 'adventure', 'gain', 'loss', 'combo', 'warn', 'win'])
+const validKinds = new Set<SoundKind>(['click', 'nav', 'open', 'map', 'date', 'timeline', 'info', 'adventure', 'gain', 'loss', 'combo', 'warn', 'win', 'victory', 'alarm', 'fuel-carbon', 'fuel-gas', 'launch', 'launch-road'])
 
 export function isSoundKind(value: unknown): value is SoundKind {
   return typeof value === 'string' && validKinds.has(value as SoundKind)

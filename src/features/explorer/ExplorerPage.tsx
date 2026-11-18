@@ -5,17 +5,17 @@ import { ClimateSummaryPanel } from './ClimateSummaryPanel'
 import { ExplorerProvider } from './ExplorerContext'
 import { WorldClimateVisualizer } from './WorldClimateVisualizer'
 import { ClimateTimeline } from './ClimateTimeline'
-import { ClimateHistoricalContext } from './ClimateHistoricalContext'
 import { ClimatePeriodComparison } from './ClimatePeriodComparison'
 import { ExplorerErrorBoundary } from './ExplorerErrorBoundary'
 import './explorer.css'
+import '../timeline/timeline.css'
 
 const ClimateChart = lazy(() => import('./ClimateChart'))
 
 export function ExplorerPage() {
   return <div className="explorer-page">
     <PageIntro number="01" title="Explorador climático" eyebrow="MESA DE OBSERVACIÓN">
-      Un planeta, muchas fechas. Recorre la señal global del clima desde 1926 y descubre cómo cambia a través del tiempo. El color no describe países: describe una anomalía global.
+      Elige una fecha y lee la anomalía global en el globo, o compara dos períodos. El color describe una sola señal global, no países.
     </PageIntro>
 
     <ExplorerErrorBoundary><ExplorerProvider>
@@ -23,23 +23,21 @@ export function ExplorerPage() {
         <WorldClimateVisualizer />
         <aside className="explorer-side">
           <ClimateTimeline />
-          <ClimateHistoricalContext />
+          <Link className="explorer-next-link" to="/linea-del-tiempo">Ver los años pasar sobre el mapa del mundo en la línea del tiempo →</Link>
         </aside>
       </section>
 
       <section className="explorer-chart-section" aria-labelledby="explorer-chart-title">
-        <div className="band-heading"><p className="eyebrow">SERIE GLOBAL NASA GISTEMP v4</p><h2 id="explorer-chart-title">La evolución en una línea</h2><p>Selecciona cualquier punto para actualizar la fecha, la esfera y la lectura. El intervalo sombreado se usa para comparar.</p></div>
+        <div className="tl-chart-head"><h2 id="explorer-chart-title">La evolución en una línea</h2><p>Toca un punto para cambiar la fecha. El intervalo sombreado es el que se compara abajo.</p></div>
         <Suspense fallback={<div className="timeline-loading" role="status">Cargando el gráfico climático…</div>}><ClimateChart /></Suspense>
       </section>
 
       <div className="explorer-analysis">
         <ClimatePeriodComparison />
         <aside className="explorer-reading-note">
-          <p className="eyebrow">NOTA DE LECTURA</p>
           <h2>Comparar no es atribuir.</h2>
-          <p>Una diferencia entre dos medias indica cuánto cambió la señal entre dos ventanas. No demuestra por sí sola qué actividad produjo ese cambio ni permite predecir el futuro.</p>
-          <p>Los niveles de París se calculan con 1880–1900 porque es el inicio de esta serie; no son la referencia completa 1850–1900.</p>
-          <Link className="text-link" to="/fuentes">Leer fuentes y metodología →</Link>
+          <p>La diferencia entre dos medias dice cuánto cambió la señal, no qué la produjo ni qué pasará después. Los niveles de París usan 1880–1900, el inicio de esta serie.</p>
+          <Link className="text-link" to="/fuentes">Metodología →</Link>
         </aside>
       </div>
 

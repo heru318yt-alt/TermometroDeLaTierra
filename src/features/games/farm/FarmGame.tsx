@@ -98,7 +98,7 @@ export function FarmGame() {
   }
 
   function proceed() {
-    if (game.status === 'finished') { const s = summarize(game); setNewBest(submitBest(s.total)); setPhase('final'); playSfx(s.balanced ? 'win' : 'click'); return }
+    if (game.status === 'finished') { const s = summarize(game); setNewBest(submitBest(s.total)); setPhase('final'); playSfx(s.balanced ? 'victory' : 'win'); return }
     setResult(null); setPhase('choosing')
   }
 

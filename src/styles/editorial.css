@@ -118,7 +118,7 @@
 .factor-lead { margin: 22px 0; color: var(--muted-dark); font-size: clamp(1rem, 1.3vw, 1.13rem); line-height: 1.7; }
 .factor-notes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .factor-notes article { padding-top: 11px; border-top: 1px solid var(--line); }
-.factor-notes article > span, .factor-levers > span { display: block; margin-bottom: 7px; color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.factor-notes article > span, .factor-levers > span, .factor-sources > span { display: block; margin-bottom: 7px; color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .factor-notes p { margin: 0; font-size: .82rem; line-height: 1.65; }
 .factor-datum { margin: 24px 0; padding: 18px 20px; background: #f8f2e4; border-left: 4px solid var(--factor-accent, var(--amber)); }
 .factor-datum-label { display: block; color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
@@ -130,10 +130,8 @@
 .factor-levers ul { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; margin: 0; padding: 0; list-style: none; }
 .factor-levers li { position: relative; padding-left: 13px; color: var(--muted-dark); font-size: .78rem; }
 .factor-levers li::before { position: absolute; left: 0; color: var(--factor-accent, var(--amber)); content: '—'; }
-.factor-sources { margin-top: 20px; padding-top: 10px; border-top: 1px solid var(--line); }
-.factor-sources summary { color: var(--muted); cursor: pointer; font-size: .6rem; font-weight: 700; letter-spacing: .1em; list-style-position: inside; text-transform: uppercase; }
-.factor-sources summary:hover { color: var(--forest-2); }
-.factor-sources-links { display: flex; flex-wrap: wrap; gap: 6px 16px; padding-top: 8px; }
+.factor-sources { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 20px; padding-top: 13px; border-top: 1px solid var(--line); }
+.factor-sources > span { flex-basis: 100%; margin-bottom: 0; }
 .factor-sources a { color: var(--forest-2); font-size: .68rem; font-weight: 700; text-decoration: none; }
 .factor-sources a:hover { color: var(--amber); }
 .factors-closing { width: var(--page); margin: 0 auto; padding: clamp(28px, 5vw, 58px); color: #e8eedf; background: var(--forest); }
@@ -468,3 +466,20 @@
   .epoch-card-state { margin-top: 4px; }
   .epoch-journey-head h2 { font-size: clamp(1.7rem, 7vw, 2.2rem); }
 }
+
+/* Factores en pestañas: un factor a la vez. */
+.factor-index button { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; padding: 14px 13px; color: var(--ink); text-align: left; background: none; border: 0; border-right: 1px solid var(--line); border-bottom: 3px solid transparent; transition: background var(--duration); }
+.factor-index button:last-child { border-right: 0; }
+.factor-index button:hover { background: #ece3cf; }
+.factor-index button.is-active { background: var(--paper-3); border-bottom-color: var(--amber); }
+.factor-index button.is-active strong { color: var(--forest); font-weight: 700; }
+.factor-index button:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
+.factors-page .factor-chapter { width: var(--page); margin: 0 auto; padding: clamp(22px, 3vw, 40px) 0; animation: reveal-up .4s var(--ease) both; }
+.factor-play { display: inline-flex; gap: 8px; margin-top: 12px; padding: 10px 16px; color: #f4eddd; background: var(--forest); text-decoration: none; font-size: .8rem; font-weight: 700; }
+.factor-play:hover { background: var(--forest-2); }
+.factor-next { justify-self: start; margin-top: 6px; padding: 9px 16px; color: var(--forest); background: transparent; border: 1px solid var(--line-dark); font-size: .8rem; font-weight: 700; }
+.factor-next:hover { background: #ece3cf; }
+.factors-note { width: var(--page); margin: 0 auto clamp(30px, 5vw, 56px); padding: 12px 16px; color: var(--muted-dark); background: #e9dfc9; border-left: 3px solid var(--amber); font-size: .78rem; }
+@media (max-width: 1100px) { .factor-index button:nth-child(3) { border-right: 0; } .factor-index button:nth-child(n+4) { border-top: 1px solid var(--line); } }
+@media (max-width: 760px) { .factor-index button:nth-child(3) { border-right: 1px solid var(--line); } .factor-index button:nth-child(even) { border-right: 0; } .factor-index button:nth-child(n+3) { border-top: 1px solid var(--line); } }
+@media (max-width: 560px) { .factor-index { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; } .factor-index button { flex: 0 0 64%; scroll-snap-align: start; border-top: 0 !important; border-right: 1px solid var(--line) !important; } }

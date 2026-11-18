@@ -70,8 +70,8 @@ export const sources: SourceEntry[] = [
   {
     id: 'natural-earth', number: '09', name: 'Natural Earth · 1:110m land',
     organization: 'Natural Earth', kind: 'Recurso',
-    description: 'Contornos de tierra de dominio público usados para la esfera del explorador. No son una capa climática regional.',
-    usedFor: 'Geometría local de los continentes en el globo interactivo.',
+    description: 'Contornos de tierra de dominio público usados para la esfera del explorador y el mapa de la línea del tiempo. No son una capa climática regional.',
+    usedFor: 'Geometría local de los continentes en el globo del explorador y el mapa de la línea del tiempo.',
     url: 'https://www.naturalearthdata.com/about/terms-of-use/', linkLabel: 'naturalearthdata.com',
   },
   {

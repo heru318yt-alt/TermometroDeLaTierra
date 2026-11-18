@@ -129,7 +129,7 @@ export function BridgeGame() {
 
   function next() {
     const { run: nextRun } = commitLevel(run, plan)
-    if (!canContinue(nextRun)) { setRun(nextRun); setNewBest(submitBest(totalScore(nextRun))); setPhase('final'); return }
+    if (!canContinue(nextRun)) { setRun(nextRun); setNewBest(submitBest(totalScore(nextRun))); setPhase('final'); playSfx(nextRun.distance > 0 ? 'victory' : 'loss'); return }
     startLevel(nextRun)
   }
 

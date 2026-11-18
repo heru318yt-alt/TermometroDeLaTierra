@@ -14,7 +14,6 @@ export function ClimateTimeline() {
       <output className="selected-date" data-testid="timeline-date" aria-live={playing ? 'off' : 'polite'}>{label}</output>
     </div>
 
-    <p className="timeline-hint">Desliza el indicador sobre la línea para explorar cómo cambió la temperatura global. El mapa, el gráfico y la lectura se actualizan con la misma fecha.</p>
 
     <div className="temporal-selectors">
       <fieldset className="view-switch"><legend>Resolución temporal</legend><label><input type="radio" name="view-mode" checked={mode === 'monthly'} onChange={() => setMode('monthly')} /> Mensual</label><label><input type="radio" name="view-mode" checked={mode === 'annual'} onChange={() => setMode('annual')} /> Anual (J-D)</label></fieldset>
@@ -28,7 +27,6 @@ export function ClimateTimeline() {
       <span className="shortcuts-label">Ir a un período</span>
       {historicalPeriods.map(period => <button key={period.start} onClick={() => select({ year: period.start, month: 1 })} aria-label={period.label}>{period.label}</button>)}
     </div>
-    <p className="muted timeline-note">Las bandas señalan los seis períodos narrativos y los puntos, acontecimientos documentados. Puedes explorar todos los años desde {FIRST_YEAR}.</p>
     <ClimatePlaybackControls />
   </section>
 }

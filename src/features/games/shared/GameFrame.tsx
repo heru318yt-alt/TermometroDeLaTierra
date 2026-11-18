@@ -35,28 +35,50 @@ export function GameFrame({ world, title, children }: { world: string; title: st
   useEffect(() => {
     if (mode !== 'expanded') return
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMode('off') }
-    const html = document.documentElement, previous = html.style.overflow
+    const html = document.documentElement, body = document.body
+    const previousHtml = html.style.overflow, previousBody = body.style.overflow, previousGutter = html.style.scrollbarGutter
     html.style.overflow = 'hidden'
+    html.style.scrollbarGutter = 'auto'
+    body.style.overflow = 'hidden'
     window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('keydown', onKey); html.style.overflow = previous }
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      html.style.overflow = previousHtml
+      html.style.scrollbarGutter = previousGutter
+      body.style.overflow = previousBody
+    }
   }, [mode])
 
   // Al salir, el foco vuelve al botón para no perder la posición del teclado.
   const button = useRef<HTMLButtonElement>(null)
+  const request = useRef(0)
 
   const toggle = useCallback(async () => {
     const el = root.current
     if (active) {
-      if (mode === 'native' && document.fullscreenElement) await document.exitFullscreen().catch(() => {})
+      request.current += 1
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {})
       setMode('off')
       window.requestAnimationFrame(() => button.current?.focus({ preventScroll: true }))
       return
     }
-    if (nativeSupported(el)) {
-      try { await el!.requestFullscreen({ navigationUI: 'hide' }); setMode('native'); return } catch { /* cae al modo expandido */ }
-    }
+    // Primero llena la ventana con CSS. Así la pantalla completa funciona
+    // aunque la API nativa no exista o su promesa no llegue a resolverse.
     setMode('expanded')
-  }, [active, mode])
+    if (!nativeSupported(el)) return
+    const token = ++request.current
+    try {
+      await el!.requestFullscreen({ navigationUI: 'hide' })
+      // Si la persona ya salió mientras se esperaba, no reabrir nada.
+      if (request.current !== token) {
+        if (document.fullscreenElement === el) await document.exitFullscreen().catch(() => {})
+        return
+      }
+      if (document.fullscreenElement === el) setMode('native')
+    } catch {
+      // El modo expandido ya está activo y cubre toda la ventana.
+    }
+  }, [active])
 
   return <FullscreenContext.Provider value={active}>
     <div ref={root} className={`gf-root gf-${world}${active ? ' is-fullscreen' : ''}${mode === 'expanded' ? ' is-expanded' : ''}`}

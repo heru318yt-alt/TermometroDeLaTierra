@@ -85,7 +85,7 @@ export function ForestGame() {
       if (event && event !== lastEvent.current) {
         lastEvent.current = event
         const pos = cellPos(event.index)
-        if (event.kind === 'fire') { floaters.push('Incendio', pos.x, pos.y, 'bad'); shake(); playSfx('loss') }
+        if (event.kind === 'fire') { floaters.push('Incendio', pos.x, pos.y, 'bad'); shake(); playSfx('alarm') }
         else { floaters.push('Tala', pos.x, pos.y, 'bad'); playSfx('warn') }
         setMessage(event.kind === 'fire' ? `Incendio en ${place(event.index)}: la parcela quedó degradada.` : `Tala en ${place(event.index)}: un bosque sin protección pasó a cultivo.`)
       }

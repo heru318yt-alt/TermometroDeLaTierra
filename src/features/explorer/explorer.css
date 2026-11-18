@@ -681,3 +681,59 @@
   .historical-shortcuts button { min-height: 42px; }
   .playback-controls button { min-height: 44px; }
 }
+
+/* ------------------------------------------------------------------
+   Observatorio del explorador: globo y línea comparten la primera
+   pantalla. La cabecera y la lectura se comprimen para que la esfera
+   empiece lo más arriba posible.
+   ------------------------------------------------------------------ */
+.explorer-observation .world-visualizer { padding: clamp(14px, 2.2vw, 26px); }
+.world-topline { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px 18px; }
+.world-topline .world-heading { min-width: 0; gap: 10px; }
+.world-topline .world-heading .badge { display: none; }
+.explorer-observation .world-heading .eyebrow { margin-bottom: 4px; }
+.explorer-observation .world-heading h2 { font-size: clamp(1.15rem, 1.8vw, 1.5rem); }
+.world-topline .world-reading-plate {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas: "date value" "label unit";
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 1px;
+  justify-items: start;
+  max-width: 240px;
+  margin: 0;
+  padding: 7px 11px;
+  text-align: left;
+}
+.world-topline .world-reading-date { grid-area: date; font-size: .62rem; }
+.world-topline .world-reading-plate strong { grid-area: value; margin: 0; font-size: clamp(1.6rem, 2.4vw, 2.2rem); line-height: 1; }
+.world-topline .world-reading-label { grid-area: label; font-size: .56rem; text-align: left; }
+.world-topline .world-reading-unit { grid-area: unit; margin-top: 0; font-size: .54rem; text-align: left; }
+@media (max-width: 760px) { .world-topline { grid-template-columns: 1fr; } }
+.explorer-observation .world-map-stage { margin-top: 0; padding: clamp(4px, 1vw, 10px) clamp(6px, 1.5vw, 16px); }
+.explorer-observation .globe-interaction { width: min(100%, 400px); }
+.explorer-observation .climate-legend { margin-top: 12px; padding-top: 10px; }
+.explorer-observation .legend-meanings { margin-top: 10px; }
+.explorer-side .climate-timeline { padding: clamp(16px, 2.2vw, 24px); }
+.explorer-side .climate-timeline .section-heading { margin-bottom: 12px; }
+.explorer-side .temporal-selectors { gap: 10px 14px; }
+.explorer-side .climate-timeline select,
+.explorer-side .view-switch label { min-height: 38px; }
+.explorer-next-link {
+  display: block;
+  margin: auto 0 0;
+  padding: 12px clamp(16px, 2.2vw, 24px);
+  color: var(--forest);
+  background: #e9dfc9;
+  border-top: 1px solid var(--line);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.explorer-next-link:hover { background: #e2d6ba; }
+
+@media (max-width: 900px) {
+  .explorer-observation .globe-interaction { width: min(100%, 330px); }
+  .explorer-observation .world-visualizer { padding: 16px clamp(12px, 3vw, 22px); }
+}

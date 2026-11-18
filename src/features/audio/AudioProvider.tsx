@@ -9,6 +9,8 @@ type Scene = {
   brightness: number
   ambience: string
   ambientLevel: number
+  /** Pista musical propia (minijuegos). Reemplaza el acorde sintetizado mientras suena. */
+  track?: { file: string; gain: number }
 }
 
 type Buses = {
@@ -18,20 +20,21 @@ type Buses = {
 }
 
 type Voice = { oscillator: OscillatorNode; gain: GainNode }
-type SoundBuffers = Record<SoundKind, AudioBuffer | null>
+type SoundBuffers = Partial<Record<SoundKind, AudioBuffer | null>>
 
-const emptySoundBuffers = (): SoundBuffers => ({
-  click: null, nav: null, open: null, map: null, date: null,
-  timeline: null, info: null, adventure: null,
-  gain: null, loss: null, combo: null, warn: null, win: null,
-})
+const emptySoundBuffers = (): SoundBuffers => ({})
 
-const soundFiles: Record<SoundKind, string> = {
-  click: 'ui-click.ogg', nav: 'ui-click.ogg', open: 'ui-open.ogg',
-  map: 'ui-map.ogg', date: 'ui-date.ogg', timeline: 'ui-timeline.ogg',
-  info: 'ui-info.ogg', adventure: 'ui-adventure.ogg',
-  gain: 'ui-info.ogg', loss: 'ui-map.ogg', combo: 'ui-adventure.ogg',
-  warn: 'ui-click.ogg', win: 'ui-adventure.ogg',
+/**
+ * Efectos de sonido (carpeta «efectos de sonido Arq multi»): recortados,
+ * con fundido de salida y volumen igualado por categoría. Si un archivo no
+ * carga, playEffect usa el tono sintetizado equivalente.
+ */
+const soundFiles: Partial<Record<SoundKind, string>> = {
+  click: 'ui-click.mp3', nav: 'ui-nav.mp3', open: 'ui-open.mp3', map: 'ui-map.mp3', date: 'ui-date.mp3',
+  timeline: 'ui-timeline.mp3', info: 'ui-info.mp3', adventure: 'ui-adventure.mp3',
+  gain: 'game-gain.mp3', loss: 'game-loss.mp3', combo: 'game-combo.mp3', warn: 'game-warn.mp3', win: 'game-win.mp3',
+  victory: 'game-victory.mp3', alarm: 'game-alarm.mp3', 'fuel-carbon': 'game-carbon.mp3', 'fuel-gas': 'game-gas.mp3',
+  launch: 'game-launch.mp3', 'launch-road': 'game-launch-road.mp3',
 }
 
 type AudioContextValue = {
@@ -63,11 +66,11 @@ const scenes: Record<string, Scene> = {
   history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42 },
   factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820, ambience: 'ambience-wind-birds.ogg', ambientLevel: .8 },
   games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900, ambience: 'ambience-wind-birds.ogg', ambientLevel: .78 },
-  energy: { name: 'Viento en el parque energético', chord: [130.81, 196, 261.63, 392], brightness: 960, ambience: 'ambience-wind-birds.ogg', ambientLevel: .86 },
-  industry: { name: 'Pulso de la fábrica circular', chord: [82.41, 123.47, 164.81, 246.94], brightness: 360, ambience: 'ambience-factory.ogg', ambientLevel: .52 },
-  transport: { name: 'Aire de la ciudad', chord: [110, 164.81, 220, 293.66], brightness: 570, ambience: 'ambience-city.ogg', ambientLevel: .64 },
-  forest: { name: 'Viento entre los bosques', chord: [130.81, 196, 261.63, 392], brightness: 1120, ambience: 'ambience-forest.mp3', ambientLevel: .84 },
-  agriculture: { name: 'Mañana en el campo', chord: [123.47, 185, 246.94, 329.63], brightness: 860, ambience: 'ambience-farm.ogg', ambientLevel: .76 },
+  energy: { name: 'Viento en el parque energético', chord: [130.81, 196, 261.63, 392], brightness: 960, ambience: 'ambience-wind-birds.ogg', ambientLevel: .86, track: { file: 'music-manten-la-red.mp3', gain: .91 } },
+  industry: { name: 'Pulso de la fábrica circular', chord: [82.41, 123.47, 164.81, 246.94], brightness: 360, ambience: 'ambience-industrial.mp3', ambientLevel: .7, track: { file: 'music-puente-de-materiales.mp3', gain: .8 } },
+  transport: { name: 'Aire de la ciudad', chord: [110, 164.81, 220, 293.66], brightness: 570, ambience: 'ambience-city.ogg', ambientLevel: .64, track: { file: 'music-carga-entre-ciudades.mp3', gain: .77 } },
+  forest: { name: 'Viento entre los bosques', chord: [130.81, 196, 261.63, 392], brightness: 1120, ambience: 'ambience-forest.mp3', ambientLevel: .84, track: { file: 'music-guardabosques.mp3', gain: 1 } },
+  agriculture: { name: 'Mañana en el campo', chord: [123.47, 185, 246.94, 329.63], brightness: 860, ambience: 'ambience-farm.ogg', ambientLevel: .76, track: { file: 'music-finca-equilibrada.mp3', gain: .81 } },
   sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42 },
   about: { name: 'Nota de proyecto', chord: [110, 164.81, 233.08, 329.63], brightness: 700, ambience: 'ambience-wind-birds.ogg', ambientLevel: .56 },
 }
@@ -93,6 +96,12 @@ function sceneForPath(pathname: string, search = ''): Scene {
   if (pathname.startsWith('/acerca')) return scenes.about
   return scenes.home
 }
+
+const audioUrl = (file: string) => new URL(`${import.meta.env.BASE_URL}audio/${file}`, window.location.origin).href
+const voiceLevel = (index: number) => index === 0 ? .6 : .18 / index
+/** Volumen de la pista: sigue el control de Música (escala de 0 a 1 con margen para no tapar los efectos). */
+const trackVolume = (scene: Scene, music: number, musicOn: boolean, muted: boolean) =>
+  !scene.track || muted || !musicOn ? 0 : Math.min(1, music / 100 * .9 * scene.track.gain)
 
 function readNumber(key: string, fallback: number) {
   try {
@@ -125,6 +134,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const busesRef = useRef<Buses | null>(null)
   const voicesRef = useRef<Voice[]>([])
   const ambientAudioRef = useRef<HTMLAudioElement | null>(null)
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const soundBuffersRef = useRef<SoundBuffers>(emptySoundBuffers())
   const soundBuffersLoadingRef = useRef(false)
   const musicLfoRef = useRef<OscillatorNode | null>(null)
@@ -150,6 +160,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     ambientAudioRef.current?.removeAttribute('src')
     ambientAudioRef.current?.load()
     ambientAudioRef.current = null
+    musicAudioRef.current?.pause()
+    musicAudioRef.current?.removeAttribute('src')
+    musicAudioRef.current?.load()
+    musicAudioRef.current = null
     soundBuffersRef.current = emptySoundBuffers()
     soundBuffersLoadingRef.current = false
     try { musicLfoRef.current?.stop() } catch { /* already stopped */ }
@@ -196,6 +210,17 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     ambientAudioRef.current = ambientAudio
     ambientAudio.play().catch(() => {})
 
+    const musicAudio = new Audio()
+    musicAudio.loop = true
+    musicAudio.preload = 'auto'
+    musicAudioRef.current = musicAudio
+    const track = sceneRef.current.track
+    if (track) {
+      musicAudio.src = soundUrl(track.file)
+      musicAudio.volume = trackVolume(sceneRef.current, music, musicOn, muted)
+      musicAudio.play().catch(() => {})
+    }
+
     if (!soundBuffersLoadingRef.current) {
       soundBuffersLoadingRef.current = true
       const loadBuffer = async (file: string) => {
@@ -203,7 +228,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         if (!response.ok) throw new Error(`No se pudo cargar ${file}`)
         return context.decodeAudioData(await response.arrayBuffer())
       }
-      Promise.all(Object.entries(soundFiles).map(async ([kind, file]) => [kind, await loadBuffer(file)] as const))
+      Promise.all(Object.entries(soundFiles).map(async ([kind, file]) => [kind, await loadBuffer(file as string)] as const))
         .then(entries => {
           if (contextRef.current === context) soundBuffersRef.current = Object.fromEntries(entries) as SoundBuffers
         })
@@ -218,7 +243,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       oscillator.type = index % 2 === 0 ? 'sine' : 'triangle'
       oscillator.frequency.value = frequency
       oscillator.detune.value = index === 0 ? -3 : index * 2
-      voiceGain.gain.value = index === 0 ? .6 : .18 / index
+      voiceGain.gain.value = sceneRef.current.track ? 0 : voiceLevel(index)
       oscillator.connect(voiceGain)
       voiceGain.connect(musicBus)
       oscillator.start()
@@ -254,6 +279,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (!context) return
     busesRef.current?.music.gain.setTargetAtTime(musicOn ? music / 100 * .095 : 0, context.currentTime, .06)
   }, [music, musicOn])
+
+  useEffect(() => {
+    const audio = musicAudioRef.current
+    if (audio) audio.volume = trackVolume(sceneRef.current, music, musicOn, muted)
+  }, [music, musicOn, muted])
 
   useEffect(() => {
     const context = contextRef.current
@@ -292,8 +322,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const source = context.createBufferSource()
       const output = context.createGain()
       source.buffer = sample
-      source.playbackRate.value = kind === 'nav' ? 1.08 : 1
-      output.gain.value = kind === 'adventure' ? .82 : .72
+      output.gain.value = kind === 'adventure' || kind === 'victory' ? .82 : .72
       source.connect(output)
       output.connect(bus)
       source.start(now)
@@ -351,6 +380,29 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       ;[392, 523.25, 659.25, 783.99].forEach((frequency, index) => tone(frequency, frequency * 1.01, .22, 'triangle', index * .085, .1))
       return
     }
+    if (kind === 'gain') {
+      tone(660, 990, .1, 'triangle', 0, .09)
+      tone(990, 1320, .08, 'sine', .04, .05)
+      return
+    }
+    if (kind === 'loss') {
+      tone(240, 140, .2, 'sawtooth', 0, .05)
+      tone(180, 110, .22, 'triangle', .02, .08)
+      return
+    }
+    if (kind === 'combo') {
+      ;[523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => tone(frequency, frequency * 1.02, .12, 'square', index * .05, .035))
+      return
+    }
+    if (kind === 'warn') {
+      tone(880, 880, .07, 'square', 0, .035)
+      tone(880, 880, .07, 'square', .12, .03)
+      return
+    }
+    if (kind === 'win') {
+      ;[392, 523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => tone(frequency, frequency, .3, 'triangle', index * .09, .09))
+      return
+    }
     tone(420, 300, .09, 'triangle', 0, .1)
   }, [effects, effectsOn, enabled, muted])
 
@@ -380,9 +432,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const voices = voicesRef.current
     if (!context || !voices.length) return
     const chord = sceneRef.current.chord
+    const track = sceneRef.current.track
     voices.forEach((voice, index) => {
       if (chord[index]) voice.oscillator.frequency.setTargetAtTime(chord[index], context.currentTime, .35)
+      // Con pista propia, el acorde sintetizado se desvanece para no superponerse.
+      voice.gain.gain.setTargetAtTime(track ? 0 : voiceLevel(index), context.currentTime, .4)
     })
+    const musicAudio = musicAudioRef.current
+    if (musicAudio) {
+      if (track) {
+        const source = audioUrl(track.file)
+        if (musicAudio.src !== source) { musicAudio.src = source; musicAudio.currentTime = 0; musicAudio.load() }
+        musicAudio.volume = trackVolume(sceneRef.current, music, musicOn, muted)
+        musicAudio.play().catch(() => {})
+      } else musicAudio.pause()
+    }
     musicFilterRef.current?.frequency.setTargetAtTime(sceneRef.current.brightness, context.currentTime, .5)
     const ambientAudio = ambientAudioRef.current
     if (ambientAudio) {
@@ -394,7 +458,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
       ambientAudio.volume = muted || !ambientOn ? 0 : Math.min(1, ambient / 100 * .78 * sceneRef.current.ambientLevel)
     }
-  }, [ambient, ambientOn, location.pathname, location.search])
+  }, [ambient, ambientOn, location.pathname, location.search]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onVisibility = () => {
@@ -403,9 +467,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if (document.hidden) {
         context.suspend().catch(() => {})
         ambientAudioRef.current?.pause()
+        musicAudioRef.current?.pause()
       } else {
         context.resume().catch(() => {})
         if (ambientAudioRef.current && ambientOn && !muted) ambientAudioRef.current.play().catch(() => {})
+        if (musicAudioRef.current && sceneRef.current.track) musicAudioRef.current.play().catch(() => {})
       }
     }
     document.addEventListener('visibilitychange', onVisibility)

@@ -13,16 +13,18 @@ export function WorldClimateVisualizer() {
   const markerPosition = anomaly === null ? 50 : (Math.max(-1, Math.min(2, anomaly)) + 1) / 3 * 100
 
   return <section className="world-visualizer" aria-labelledby="world-title">
-    <div className="world-heading">
-      <div><p className="eyebrow">UNA SEÑAL GLOBAL · NO UN MAPA REGIONAL</p><h2 id="world-title">La Tierra en perspectiva</h2></div>
-      <span className="badge">{mode === 'monthly' ? 'Anomalía mensual' : 'Promedio anual J-D'}</span>
-    </div>
+    <div className="world-topline">
+      <div className="world-heading">
+        <div><p className="eyebrow">UNA SEÑAL GLOBAL · NO UN MAPA REGIONAL</p><h2 id="world-title">La Tierra en perspectiva</h2></div>
+        <span className="badge">{mode === 'monthly' ? 'Anomalía mensual' : 'Promedio anual J-D'}</span>
+      </div>
 
-    <div className="world-reading-plate">
-      <span className="world-reading-date" data-testid="world-date">{label}</span>
-      <strong data-testid="world-anomaly">{formatAnomaly(anomaly)}</strong>
-      <span className="world-reading-label">Anomalía global · referencia 1951–1980</span>
-      <span className="world-reading-unit">Unidad: °C de anomalía · Fuente: NASA GISTEMP v4</span>
+      <div className="world-reading-plate">
+        <span className="world-reading-date" data-testid="world-date">{label}</span>
+        <strong data-testid="world-anomaly">{formatAnomaly(anomaly)}</strong>
+        <span className="world-reading-label">Anomalía global · 1951–1980</span>
+        <span className="world-reading-unit">°C · NASA GISTEMP v4</span>
+      </div>
     </div>
 
     <div className="world-map-stage">

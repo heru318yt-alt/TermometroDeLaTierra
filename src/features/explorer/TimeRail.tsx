@@ -4,7 +4,7 @@ import { playSfx } from '../audio/sfx'
 import { useExplorer } from './ExplorerContext'
 import { FIRST_YEAR, fromIndex } from './model'
 
-type Props = { variant?: 'compact' | 'full' }
+type Props = { variant?: 'compact' | 'full'; showCard?: boolean }
 
 type Marker = {
   id: string
@@ -30,7 +30,7 @@ const markers: Marker[] = historicalPeriods.flatMap(period => period.events.map(
  * the selected-year needle around it. Nothing here stores its own date: every
  * instrument reads the same selection from ExplorerContext.
  */
-export function TimeRail({ variant = 'compact' }: Props) {
+export function TimeRail({ variant = 'compact', showCard = true }: Props) {
   const { mode, date, selected, minIndex, maxIndex, last, select, label, playing } = useExplorer()
   const [openMarker, setOpenMarker] = useState<string | null>(null)
   const activePeriod = historicalPeriods.find(period => date.year >= period.start && date.year <= period.end)
@@ -88,10 +88,10 @@ export function TimeRail({ variant = 'compact' }: Props) {
             className={`rail-marker${openMarker === item.id ? ' is-open' : ''}`}
             style={{ left: `${position(item.year)}%` }}
             aria-label={`Evento histórico de ${item.year}: ${item.title}`}
-            aria-expanded={openMarker === item.id}
+            aria-expanded={showCard ? openMarker === item.id : undefined}
             onClick={() => {
               select({ year: item.year, month: 1 })
-              setOpenMarker(current => current === item.id ? null : item.id)
+              if (showCard) setOpenMarker(current => current === item.id ? null : item.id)
             }}
           ><i /></button>)}
         </div>
@@ -120,7 +120,7 @@ export function TimeRail({ variant = 'compact' }: Props) {
       <span>{last.year}</span>
     </div>
 
-    {marker && <div className="rail-event-card" role="status">
+    {showCard && marker && <div className="rail-event-card" role="status">
       <div>
         <span className="rail-event-meta">Hito · {marker.year}</span>
         <h3>{marker.title}</h3>

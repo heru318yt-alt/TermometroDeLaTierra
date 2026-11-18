@@ -31,7 +31,8 @@
 
 /* Pantalla completa (nativa o expandida): ocupa la ventana y reparte el alto. */
 .gf-root.is-fullscreen { display: flex; flex-direction: column; width: 100vw; height: 100vh; height: 100dvh; max-width: none; border: 0; border-radius: 0; }
-.gf-root.is-expanded { position: fixed; inset: 0; z-index: 1000; width: auto; height: auto; }
+.gf-root.is-expanded { position: fixed; inset: 0; z-index: 1000; width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; margin: 0; border: 0; border-radius: 0; }
+.gf-root:fullscreen { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: none; margin: 0; border: 0; border-radius: 0; }
 .gf-root.is-fullscreen .gf-body { flex: 1; min-height: 0; display: flex; }
 .gf-root.is-fullscreen .gf-body > * { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; overflow: auto; border: 0; }
 /* Escenarios con canvas 16:9: se escalan al espacio libre sin deformarse. */

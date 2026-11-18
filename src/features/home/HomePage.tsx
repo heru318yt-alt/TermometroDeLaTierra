@@ -3,17 +3,27 @@ import { Globe } from '../../components/Globe'
 import { useClimateData } from '../climate/useClimateData'
 import { getAnnualAnomaly } from '../climate/math'
 import { formatAnomaly } from '../explorer/model'
+import { gameModules } from '../games/catalog'
 import { WorldAtlas } from './WorldAtlas'
 
 const monthFormat = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 const numberFormat = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 })
+const ic = (d: string) => <svg viewBox="0 0 24 24"><path d={d} /></svg>
+const ROUTE_ICON: Record<string, React.ReactNode> = {
+  '01': ic('M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm-9 9h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18'),
+  '02': ic('M3 17l5-6 4 3 6-8 3 3M3 21h18'),
+  '03': ic('M4 5h11a3 3 0 0 1 3 3v12H7a3 3 0 0 1-3-3V5Zm14 3h2v9a3 3 0 0 1-3 3M8 9h6M8 13h6'),
+  '04': ic('M12 3v4M5 7l3 3M19 7l-3 3M4 15h4l2-4 4 8 2-4h4'),
+  '05': ic('M6 9h12a3 3 0 0 1 3 3v3a3 3 0 0 1-5 2l-1-1H9l-1 1a3 3 0 0 1-5-2v-3a3 3 0 0 1 3-3Zm2 2v4M6 13h4M15 12h.01M17 14h.01'),
+  '06': ic('M6 3h9l4 4v14H6V3Zm9 0v4h4M9 12h7M9 16h7'),
+}
 const chapters = [
-  { number: '01', to: '/explorador', title: 'Explorador climático', copy: 'La señal global, el planeta y la lectura de una fecha.' },
-  { number: '02', to: '/linea-del-tiempo', title: 'Línea del tiempo', copy: 'La serie histórica y el mapa, sincronizados en una fecha.' },
-  { number: '03', to: '/historia', title: 'Historia del clima', copy: 'Seis décadas de ciencia, acuerdos y decisiones.' },
-  { number: '04', to: '/factores', title: 'Factores del cambio climático', copy: 'Energía, industria, movilidad, bosques y alimentación.' },
-  { number: '05', to: '/minijuegos', title: 'Minijuegos', copy: 'Cinco misiones para decidir, probar y volver a intentar.' },
-  { number: '06', to: '/fuentes', title: 'Fuentes y metodología', copy: 'De dónde viene cada dato y qué no puede afirmarse.' },
+  { number: '01', to: '/explorador', title: 'Explorador climático', copy: 'La lectura de una fecha en el globo y la comparación entre períodos.', meta: 'Mapa · indicador · comparación' },
+  { number: '02', to: '/linea-del-tiempo', title: 'Línea del tiempo', copy: 'El mapa del mundo y los acontecimientos cambian mientras recorres los años.', meta: 'Mapa · serie · reproducción' },
+  { number: '03', to: '/historia', title: 'Historia del clima', copy: 'Seis décadas de ciencia, acuerdos y decisiones.', meta: '1970—2025 · fuentes' },
+  { number: '04', to: '/factores', title: 'Factores del cambio climático', copy: 'Energía, industria, movilidad, bosques y alimentación.', meta: 'Cinco fuerzas · datos' },
+  { number: '05', to: '/minijuegos', title: 'Minijuegos', copy: 'Cinco mundos para decidir, probar y volver a intentar.', meta: 'Navegador · cinco misiones' },
+  { number: '06', to: '/fuentes', title: 'Fuentes y metodología', copy: 'De dónde viene cada dato y qué no puede afirmarse.', meta: 'NASA · IPCC · OWID' },
 ]
 
 function SignalSparkline() {
@@ -95,18 +105,24 @@ export function HomePage() {
       </div>
     </section>
 
-    <section className="chapter-index" aria-labelledby="chapter-index-title">
-      <div className="chapter-index-head">
-        <p className="eyebrow">MAPA DEL RECORRIDO · SEIS CAPÍTULOS</p>
-        <h2 id="chapter-index-title">Un observatorio no se lee de arriba abajo.</h2>
-        <p>Se recorre. Elige una entrada y sigue la historia desde donde quieras empezar.</p>
+    <section className="home-routes" aria-labelledby="home-routes-title">
+      <div className="home-routes-head">
+        <h2 id="home-routes-title">¿Por dónde empezar?</h2>
+        <p>Seis entradas al mismo observatorio. Todas comparten la serie de NASA y puedes saltar entre ellas cuando quieras.</p>
       </div>
-      <div className="chapter-list">
-        {chapters.map(chapter => <Link key={chapter.to} to={chapter.to} className="chapter-row">
-          <span className="chapter-row-number">{chapter.number}</span>
-          <span className="chapter-row-title">{chapter.title}</span>
-          <span className="chapter-row-copy">{chapter.copy}</span>
-          <span className="chapter-row-arrow" aria-hidden="true">↗</span>
+      <div className="home-route-grid">
+        {chapters.map(chapter => <Link key={chapter.to} to={chapter.to} className={`home-route home-route-${chapter.number}`}>
+          <span className="home-route-icon" aria-hidden="true">{ROUTE_ICON[chapter.number]}</span>
+          <span className="home-route-number">{chapter.number}</span>
+          <strong>{chapter.title}</strong>
+          <span className="home-route-copy">{chapter.copy}</span>
+          <span className="home-route-arrow" aria-hidden="true">→</span>
+        </Link>)}
+      </div>
+      <div className="home-worlds" aria-label="Acceso directo a los minijuegos">
+        <span className="home-worlds-label">Ir directo a un minijuego</span>
+        {gameModules.map((game, i) => <Link key={game.id} to={`/minijuegos?world=${game.id}`} aria-label={`Abrir el minijuego ${game.title}`}>
+          <b>{String(i + 1).padStart(2, '0')}</b>{game.title}<small>{game.theme}</small>
         </Link>)}
       </div>
     </section>
