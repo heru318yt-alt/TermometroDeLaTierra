@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useClimateData } from '../climate/useClimateData'
 import { getAnnualAnomaly, getMonthlyAnomaly } from '../climate/math'
@@ -36,10 +36,20 @@ function useExplorerState(initialMode: ViewMode) {
     return () => { media?.removeEventListener('change', update); document.removeEventListener('visibilitychange', visibility) }
   }, [])
 
+  const reachedEnd = useRef(false)
+  useEffect(() => {
+    if (!playing) { reachedEnd.current = false; return }
+    if (atEnd && !reachedEnd.current) { reachedEnd.current = true; playSfx('combo') }
+  }, [playing, atEnd])
   useEffect(() => {
     if (!playing || reducedMotion || atEnd) return
     const interval = window.setInterval(() => {
-      setSelected(value => Math.min(maxIndex, value + (mode === 'monthly' ? 1 : 12)))
+      setSelected(value => {
+        const stepSize = mode === 'monthly' ? 1 : 12
+        const next = Math.min(maxIndex, value + stepSize)
+        if (next !== value && speed >= 700) playSfx('timeline')
+        return next
+      })
     }, speed)
     return () => window.clearInterval(interval)
   }, [playing, reducedMotion, atEnd, maxIndex, mode, speed])
