@@ -52,7 +52,7 @@ export function WorldAtlas() {
           const id = game.id as WorldId
           const unlocked = isEpochUnlocked(id, completed)
           const label = unlocked ? `Explorar ${game.title}` : `Explorar ${game.title}. Etapa bloqueada: completa la anterior.`
-          return <a key={game.id} href={gameRoute(id)} onClick={event => openWorld(event, id)} aria-label={label} className={unlocked ? undefined : 'is-locked'}>
+          return <a key={game.id} href={gameRoute(id)} onClick={event => openWorld(event, id)} data-sfx={unlocked ? 'nav' : 'warn'} aria-label={label} className={unlocked ? undefined : 'is-locked'}>
             <circle cx={x} cy={y} r="21" fill={unlocked ? '#f7efd9' : '#ded8c8'} stroke={unlocked ? '#244e40' : '#9d927b'} strokeWidth="3" />
             <circle cx={x} cy={y} r="4" fill={unlocked ? '#bd6d48' : '#9d927b'} />
             <text x={x} y={y + 5} textAnchor="middle" fontSize="12" fontWeight="700" fill={unlocked ? '#244e40' : '#6d6556'} fontFamily="Arial,sans-serif">{String(i + 1).padStart(2, '0')}</text>
@@ -68,7 +68,7 @@ export function WorldAtlas() {
       {gameModules.map((game, i) => {
         const id = game.id as WorldId
         const unlocked = isEpochUnlocked(id, completed)
-        return <Link key={game.id} to={gameRoute(id)} className={unlocked ? undefined : 'is-locked'}>
+        return <Link key={game.id} to={gameRoute(id)} data-sfx={unlocked ? 'nav' : 'warn'} className={unlocked ? undefined : 'is-locked'}>
           <span>{String(i + 1).padStart(2, '0')}</span>
           <span><strong>{game.title}</strong><small>{game.theme} · {game.era}{unlocked ? '' : ' · Bloqueada'}</small></span>
           <span aria-hidden="true">{unlocked ? '↗' : '◼'}</span>

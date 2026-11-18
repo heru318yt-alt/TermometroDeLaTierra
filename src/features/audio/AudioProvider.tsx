@@ -9,7 +9,7 @@ type Scene = {
   brightness: number
   ambience: string
   ambientLevel: number
-  /** Pista musical propia (minijuegos). Reemplaza el acorde sintetizado mientras suena. */
+  /** Pista propia de la sección o del minijuego. Reemplaza el acorde sintetizado mientras suena. */
   track?: { file: string; gain: number }
 }
 
@@ -20,9 +20,35 @@ type Buses = {
 }
 
 type Voice = { oscillator: OscillatorNode; gain: GainNode }
-type SoundBuffers = Partial<Record<SoundKind, AudioBuffer | null>>
+type SoundSample = { buffer: AudioBuffer; gain: number }
+type SoundBuffers = Partial<Record<SoundKind, SoundSample | null>>
 
 const emptySoundBuffers = (): SoundBuffers => ({})
+
+/** Efectos de interfaz: se igualan a un RMS más alto para que se oigan sobre la música. */
+const interfaceKinds = new Set<SoundKind>(['click', 'nav', 'open', 'map', 'date', 'timeline', 'info', 'toggle', 'event'])
+
+/** Iguala el volumen percibido de cada archivo; los clics cortos necesitan más ganancia que una victoria. */
+function sampleGain(buffer: AudioBuffer, kind: SoundKind) {
+  let peak = 0
+  let sum = 0
+  let count = 0
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const data = buffer.getChannelData(channel)
+    for (let i = 0; i < data.length; i += 4) {
+      const value = Math.abs(data[i])
+      if (value > peak) peak = value
+      sum += data[i] * data[i]
+      count++
+    }
+  }
+  const rms = Math.sqrt(sum / Math.max(1, count))
+  const targetRms = interfaceKinds.has(kind) ? .15 : .12
+  const peakCap = interfaceKinds.has(kind) ? 1.2 : 1
+  const byRms = rms > 0 ? targetRms / rms : 1
+  const byPeak = peak > 0 ? peakCap / peak : 1
+  return Math.min(byRms, byPeak)
+}
 
 /**
  * Efectos de sonido (carpeta «efectos de sonido Arq multi»): recortados,
@@ -32,6 +58,7 @@ const emptySoundBuffers = (): SoundBuffers => ({})
 const soundFiles: Partial<Record<SoundKind, string>> = {
   click: 'ui-click.mp3', nav: 'ui-nav.mp3', open: 'ui-open.mp3', map: 'ui-map.mp3', date: 'ui-date.mp3',
   timeline: 'ui-timeline.mp3', info: 'ui-info.mp3', adventure: 'ui-adventure.mp3',
+  toggle: 'ui-timeline.mp3', event: 'ui-info.mp3',
   gain: 'game-gain.mp3', loss: 'game-loss.mp3', combo: 'game-combo.mp3', warn: 'game-warn.mp3', win: 'game-win.mp3',
   victory: 'game-victory.mp3', alarm: 'game-alarm.mp3', 'fuel-carbon': 'game-carbon.mp3', 'fuel-gas': 'game-gas.mp3',
   launch: 'game-launch.mp3', 'launch-road': 'game-launch-road.mp3',
@@ -60,18 +87,18 @@ type AudioContextValue = {
 const AudioSettingsContext = createContext<AudioContextValue | null>(null)
 
 const scenes: Record<string, Scene> = {
-  home: { name: 'Puerto de observación', chord: [110, 164.81, 220, 329.63], brightness: 760, ambience: 'ambience-wind-birds.ogg', ambientLevel: .92 },
-  explorer: { name: 'Mesa de observación', chord: [103.83, 155.56, 207.65, 311.13], brightness: 680, ambience: 'ambience-wind-birds.ogg', ambientLevel: .72 },
-  timeline: { name: 'Sala de instrumentos', chord: [98, 146.83, 196, 293.66], brightness: 610, ambience: 'ambience-wind-birds.ogg', ambientLevel: .48 },
-  history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42 },
-  factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820, ambience: 'ambience-wind-birds.ogg', ambientLevel: .8 },
-  games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900, ambience: 'ambience-wind-birds.ogg', ambientLevel: .78 },
+  home: { name: 'Puerto de observación', chord: [110, 164.81, 220, 329.63], brightness: 760, ambience: 'ambience-wind-birds.ogg', ambientLevel: .92, track: { file: 'section-inicio.mp3', gain: .6 } },
+  explorer: { name: 'Mesa de observación', chord: [103.83, 155.56, 207.65, 311.13], brightness: 680, ambience: 'ambience-wind-birds.ogg', ambientLevel: .72, track: { file: 'section-explorador.mp3', gain: .58 } },
+  timeline: { name: 'Sala de instrumentos', chord: [98, 146.83, 196, 293.66], brightness: 610, ambience: 'ambience-wind-birds.ogg', ambientLevel: .48, track: { file: 'section-linea-del-tiempo.mp3', gain: .6 } },
+  history: { name: 'Bitácora', chord: [103.83, 155.56, 207.65, 311.13], brightness: 560, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42, track: { file: 'section-historia.mp3', gain: .6 } },
+  factors: { name: 'Cuaderno de campo', chord: [116.54, 174.61, 233.08, 349.23], brightness: 820, ambience: 'ambience-wind-birds.ogg', ambientLevel: .8, track: { file: 'section-factores.mp3', gain: .6 } },
+  games: { name: 'Atlas de aventuras', chord: [130.81, 196, 261.63, 392], brightness: 900, ambience: 'ambience-wind-birds.ogg', ambientLevel: .78, track: { file: 'section-minijuegos.mp3', gain: .62 } },
   energy: { name: 'Viento en el parque energético', chord: [130.81, 196, 261.63, 392], brightness: 960, ambience: 'ambience-wind-birds.ogg', ambientLevel: .86, track: { file: 'music-manten-la-red.mp3', gain: .91 } },
   industry: { name: 'Pulso de la fábrica circular', chord: [82.41, 123.47, 164.81, 246.94], brightness: 360, ambience: 'ambience-industrial.mp3', ambientLevel: .7, track: { file: 'music-puente-de-materiales.mp3', gain: .8 } },
   transport: { name: 'Aire de la ciudad', chord: [110, 164.81, 220, 293.66], brightness: 570, ambience: 'ambience-city.ogg', ambientLevel: .64, track: { file: 'music-carga-entre-ciudades.mp3', gain: .77 } },
   forest: { name: 'Viento entre los bosques', chord: [130.81, 196, 261.63, 392], brightness: 1120, ambience: 'ambience-forest.mp3', ambientLevel: .84, track: { file: 'music-guardabosques.mp3', gain: 1 } },
   agriculture: { name: 'Mañana en el campo', chord: [123.47, 185, 246.94, 329.63], brightness: 860, ambience: 'ambience-farm.ogg', ambientLevel: .76, track: { file: 'music-finca-equilibrada.mp3', gain: .81 } },
-  sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42 },
+  sources: { name: 'Archivo y método', chord: [98, 146.83, 220, 293.66], brightness: 520, ambience: 'ambience-wind-birds.ogg', ambientLevel: .42, track: { file: 'section-fuentes.mp3', gain: .6 } },
   about: { name: 'Nota de proyecto', chord: [110, 164.81, 233.08, 329.63], brightness: 700, ambience: 'ambience-wind-birds.ogg', ambientLevel: .56 },
 }
 
@@ -189,7 +216,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     musicFilter.Q.value = .35
     master.gain.value = muted ? 0 : .86
     musicBus.gain.value = musicOn ? music / 100 * .095 : 0
-    effectsBus.gain.value = effectsOn ? effects / 100 * .3 : 0
+    effectsBus.gain.value = effectsOn ? effects / 100 * .4 : 0
 
     musicBus.connect(musicFilter)
     musicFilter.connect(master)
@@ -228,7 +255,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         if (!response.ok) throw new Error(`No se pudo cargar ${file}`)
         return context.decodeAudioData(await response.arrayBuffer())
       }
-      Promise.all(Object.entries(soundFiles).map(async ([kind, file]) => [kind, await loadBuffer(file as string)] as const))
+      Promise.all(Object.entries(soundFiles).map(async ([kind, file]) => {
+        const buffer = await loadBuffer(file as string)
+        return [kind, { buffer, gain: sampleGain(buffer, kind as SoundKind) }] as const
+      }))
         .then(entries => {
           if (contextRef.current === context) soundBuffersRef.current = Object.fromEntries(entries) as SoundBuffers
         })
@@ -288,7 +318,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const context = contextRef.current
     if (!context) return
-    busesRef.current?.effects.gain.setTargetAtTime(effectsOn ? effects / 100 * .3 : 0, context.currentTime, .04)
+    busesRef.current?.effects.gain.setTargetAtTime(effectsOn ? effects / 100 * .4 : 0, context.currentTime, .04)
   }, [effects, effectsOn])
 
   useEffect(() => {
@@ -321,8 +351,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (sample) {
       const source = context.createBufferSource()
       const output = context.createGain()
-      source.buffer = sample
-      output.gain.value = kind === 'adventure' || kind === 'victory' ? .82 : .72
+      source.buffer = sample.buffer
+      output.gain.value = (kind === 'adventure' || kind === 'victory' ? .85 : .8) * sample.gain
       source.connect(output)
       output.connect(bus)
       source.start(now)
@@ -403,6 +433,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       ;[392, 523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => tone(frequency, frequency, .3, 'triangle', index * .09, .09))
       return
     }
+    if (kind === 'toggle') {
+      tone(620, 880, .07, 'triangle', 0, .18)
+      tone(880, 740, .09, 'sine', .06, .12)
+      return
+    }
+    if (kind === 'event') {
+      ;[783.99, 1174.66].forEach((frequency, index) => tone(frequency, frequency, .55, 'sine', index * .07, .12))
+      return
+    }
     tone(420, 300, .09, 'triangle', 0, .1)
   }, [effects, effectsOn, enabled, muted])
 
@@ -418,11 +457,19 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const requested = control.getAttribute('data-sfx')
       playEffect(isSoundKind(requested) ? requested : control.tagName === 'A' ? 'nav' : control.tagName === 'SUMMARY' ? 'open' : 'click')
     }
+    // Los desplegables no emiten un clic reconocible: suenan al confirmar el cambio.
+    const onChange = (event: Event) => {
+      const control = event.target as Element | null
+      if (!control || control.tagName !== 'SELECT' || control.closest('.audio-dock')) return
+      playEffect('timeline')
+    }
     window.addEventListener('tt:sfx', onSfx)
     document.addEventListener('click', onClick)
+    document.addEventListener('change', onChange)
     return () => {
       window.removeEventListener('tt:sfx', onSfx)
       document.removeEventListener('click', onClick)
+      document.removeEventListener('change', onChange)
     }
   }, [playEffect])
 

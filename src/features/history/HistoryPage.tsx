@@ -36,7 +36,7 @@ export function HistoryPage() {
       </div>
 
       <nav className="history-period-nav" aria-label="Períodos de la historia climática">
-        {historicalPeriods.map((item, index) => <button key={item.start} type="button" data-sfx="open" className={periodIndex === index ? 'is-active' : ''} aria-pressed={periodIndex === index} onClick={() => selectPeriod(index)}>
+        {historicalPeriods.map((item, index) => <button key={item.start} type="button" data-sfx="toggle" className={periodIndex === index ? 'is-active' : ''} aria-pressed={periodIndex === index} onClick={() => selectPeriod(index)}>
           <span>{item.label}</span><small>{item.events.length} {item.events.length === 1 ? 'hito' : 'hitos'}</small>
         </button>)}
       </nav>

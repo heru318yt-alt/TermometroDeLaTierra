@@ -33,7 +33,7 @@ export function FactorsPage() {
 
     <div className="factor-index" role="tablist" aria-label="Los cinco factores">
       {factors.map((f, i) => <button key={f.id} ref={el => { tabs.current[i] = el }} type="button" role="tab" id={`factor-tab-${f.id}`}
-        aria-selected={i === index} aria-controls="factor-panel" tabIndex={i === index ? 0 : -1} data-sfx="open"
+        aria-selected={i === index} aria-controls="factor-panel" tabIndex={i === index ? 0 : -1} data-sfx="toggle"
         className={i === index ? 'is-active' : undefined} onClick={() => choose(i)} onKeyDown={event => onKey(event, i)}>
         <span>{f.number}</span><strong>{f.title}</strong>
       </button>)}

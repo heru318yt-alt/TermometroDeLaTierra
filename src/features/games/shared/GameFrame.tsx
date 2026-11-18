@@ -85,7 +85,7 @@ export function GameFrame({ world, title, children }: { world: string; title: st
       role={mode === 'expanded' ? 'dialog' : undefined} aria-modal={mode === 'expanded' ? true : undefined} aria-label={mode === 'expanded' ? `${title} en pantalla completa` : undefined}>
       <div className="gf-bar">
         <span className="gf-title"><i aria-hidden="true" />{title}</span>
-        <button ref={button} type="button" className="gf-fullscreen" onClick={toggle} aria-pressed={active}
+        <button ref={button} type="button" className="gf-fullscreen" data-sfx={active ? 'click' : 'open'} onClick={toggle} aria-pressed={active}
           aria-label={active ? 'Salir de pantalla completa' : 'Pantalla completa'} title={active ? 'Salir (Esc)' : 'Pantalla completa'}>
           <svg viewBox="0 0 24 24" aria-hidden="true">{active
             ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />

@@ -55,7 +55,7 @@ function useExplorerState(initialMode: ViewMode) {
     const clamped = Math.max(FIRST_YEAR, Math.min(last.year, Math.round(year)))
     apply({ year: clamped, month: Math.min(date.month, clamped === last.year ? last.month : 12) }, 'date')
   }
-  const setMode = (next: ViewMode) => { setPlaying(false); setModeState(next); playSfx('open') }
+  const setMode = (next: ViewMode) => { setPlaying(false); setModeState(next); playSfx('toggle') }
   const step = (direction: number) => apply(fromIndex(selected + direction * (mode === 'monthly' ? 1 : 12)), 'timeline')
   const reset = () => apply(fromIndex(minIndex), 'timeline')
   const togglePlay = () => {

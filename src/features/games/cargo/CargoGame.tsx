@@ -219,10 +219,10 @@ export function CargoGame() {
       </div>
       <div className="cargo-aim">
         <label>Ángulo: {MODES[mode].fixedAngle !== null ? `${MODES[mode].fixedAngle}° (fijo)` : `${angle}°`}
-          <input type="range" min={10} max={80} step={1} value={MODES[mode].fixedAngle ?? angle} disabled={MODES[mode].fixedAngle !== null} onChange={event => setAngle(Number(event.target.value))} aria-label="Ángulo de lanzamiento" />
+          <input type="range" min={10} max={80} step={1} value={MODES[mode].fixedAngle ?? angle} disabled={MODES[mode].fixedAngle !== null} onClick={() => playSfx('click')} onChange={event => setAngle(Number(event.target.value))} aria-label="Ángulo de lanzamiento" />
         </label>
         <label>Potencia: {Math.round(power * 100)} %
-          <input type="range" min={20} max={100} step={1} value={Math.round(power * 100)} onChange={event => setPower(Number(event.target.value) / 100)} aria-label="Potencia de lanzamiento" />
+          <input type="range" min={20} max={100} step={1} value={Math.round(power * 100)} onClick={() => playSfx('click')} onChange={event => setPower(Number(event.target.value) / 100)} aria-label="Potencia de lanzamiento" />
         </label>
         <button type="button" className="button cargo-fire" disabled={!canFire} onClick={fire}>{hud.cooldown > 0 ? `Recargando ${hud.cooldown.toFixed(1)} s` : 'Lanzar ↗'}</button>
       </div>

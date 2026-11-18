@@ -159,7 +159,7 @@ export function GamesPage() {
 
       {completed.length > 0 && <details className="epoch-reset">
         <summary>Reiniciar progreso</summary>
-        <div><p>Borra las etapas completadas en este navegador y vuelve a empezar por 1970.</p><button type="button" className="text-link" onClick={restartRoute}>Reiniciar la ruta</button></div>
+        <div><p>Borra las etapas completadas en este navegador y vuelve a empezar por 1970.</p><button type="button" className="text-link" data-sfx="loss" onClick={restartRoute}>Reiniciar la ruta</button></div>
       </details>}
     </section>
 
@@ -196,7 +196,7 @@ export function GamesPage() {
           <div className="mission-console">
             <p className="unity-note">Los indicadores de cada partida son valores didácticos del escenario; no representan mediciones de emisiones ni datos NASA GISTEMP.</p>
             <div className="mission-console-actions">
-              <button type="button" className="text-link" onClick={() => markCompleted(activeEpoch.id)}>Marcar reto completado</button>
+              <button type="button" className="text-link" data-sfx="win" onClick={() => markCompleted(activeEpoch.id)}>Marcar reto completado</button>
             </div>
           </div>
           <details className="mission-brief">

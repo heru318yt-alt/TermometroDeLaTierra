@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { PageIntro } from '../../components/PageIntro'
+import { playSfx } from '../audio/sfx'
 import { ClimatePlaybackControls } from '../explorer/ClimatePlaybackControls'
 import { ClimateSummaryPanel } from '../explorer/ClimateSummaryPanel'
 import { ExplorerErrorBoundary } from '../explorer/ExplorerErrorBoundary'
@@ -20,6 +21,20 @@ function TimelineSide() {
   const next = historicalPeriods.find(item => item.start > date.year)
   const event = latestEvent(date.year)
   const isNew = event && event.year === date.year
+  const shownEvent = useRef<string | null>(null)
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true
+      shownEvent.current = event?.id ?? null
+      return
+    }
+    if (!event) { shownEvent.current = null; return }
+    const previous = shownEvent.current
+    shownEvent.current = event.id
+    if (previous !== event.id) playSfx('event')
+  }, [event])
 
   return <aside className="tl-side" aria-label="Lectura de la fecha seleccionada">
     <div className="tl-side-period">

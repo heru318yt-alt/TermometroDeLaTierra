@@ -38,6 +38,20 @@ Los nombres con formato `autor-titulo-número` corresponden al formato de descar
 - `ambience-forest.mp3` — “Forest Ambience”, TinyWorlds. CC0. [OpenGameArt](https://opengameart.org/content/forest-ambience)
 - `ambience-farm.ogg` — grabación de recinto avícola, Monika Widzicka / Work With Sounds. CC BY 4.0. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:WWS_Poultryenclosure.ogg) · [Licencia](https://creativecommons.org/licenses/by/4.0/)
 
+## Música de las secciones
+
+Pistas aportadas por el equipo para identificar cada sección. Se reproducen en bucle por el canal **Música** al entrar en la sección y reemplazan la armonía sintetizada mientras suenan. Al abrir un minijuego se detienen y suena la pista del mundo; al volver a la ruta, vuelve la de **Minijuegos**.
+
+- `section-inicio.mp3` — Inicio
+- `section-explorador.mp3` — Explorador climático
+- `section-linea-del-tiempo.mp3` — Línea del tiempo
+- `section-historia.mp3` — Historia del clima
+- `section-factores.mp3` — Factores
+- `section-minijuegos.mp3` — Minijuegos (solo en la ruta, nunca sobre un mundo abierto)
+- `section-fuentes.mp3` — Fuentes y metodología
+
+La página **Acerca del proyecto** conserva la armonía sintetizada: no vino una pista propia para ella.
+
 ## Música de los minijuegos
 
 Pistas aportadas por el equipo del proyecto; se reproducen en bucle por el canal **Música** al abrir cada mundo y reemplazan la armonía sintetizada mientras suenan. Su volumen se iguala en código (factor `track.gain` en `AudioProvider.tsx`, medido en LUFS).

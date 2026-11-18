@@ -63,7 +63,7 @@ export function Layout() {
 
   return <AudioProvider>
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
-    {open && <div className="menu-backdrop" aria-hidden="true" onClick={() => { setOpen(false); trigger.current?.focus() }} />}
+    {open && <div className="menu-backdrop" aria-hidden="true" data-sfx="click" onClick={() => { setOpen(false); trigger.current?.focus() }} />}
     <header className={`site-header${open ? ' menu-open' : ''}`} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}>
       <div className="header-inner">
         <Link className="brand" to="/" aria-label="Termómetro de la Tierra, ir al inicio">
