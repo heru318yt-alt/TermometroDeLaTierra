@@ -37,6 +37,7 @@ function useExplorerState(initialMode: ViewMode) {
   }, [])
 
   const reachedEnd = useRef(false)
+  const lastPeriod = useRef<number | null>(null)
   useEffect(() => {
     if (!playing) { reachedEnd.current = false; return }
     if (atEnd && !reachedEnd.current) { reachedEnd.current = true; playSfx('combo') }
@@ -47,7 +48,13 @@ function useExplorerState(initialMode: ViewMode) {
       setSelected(value => {
         const stepSize = mode === 'monthly' ? 1 : 12
         const next = Math.min(maxIndex, value + stepSize)
-        if (next !== value && speed >= 700) playSfx('timeline')
+        if (next !== value) {
+          playSfx('click')
+          const nextYear = Math.floor(next / 12)
+          const prevYear = Math.floor(value / 12)
+          if (lastPeriod.current !== null && nextYear > prevYear && nextYear % 10 === 0) playSfx('toggle')
+          lastPeriod.current = nextYear
+        }
         return next
       })
     }, speed)
@@ -72,6 +79,7 @@ function useExplorerState(initialMode: ViewMode) {
     if (reducedMotion) return
     playSfx('timeline')
     if (atEnd) setSelected(minIndex)
+    lastPeriod.current = atEnd ? Math.floor(minIndex / 12) : Math.floor(selected / 12)
     setPlaying(value => !value)
   }
   const series = useMemo(() => {
