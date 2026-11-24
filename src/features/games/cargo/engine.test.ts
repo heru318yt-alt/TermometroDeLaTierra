@@ -176,3 +176,30 @@ describe('Carga entre ciudades · racha de lotes precisos', () => {
     expect(Object.keys(state.batches)).toHaveLength(0)
   })
 })
+
+describe('Carga entre ciudades · mínimos por ruta', () => {
+  it('entregar cajas solo en la primera ruta no aprueba el reto', () => {
+    const s = createGame()
+    const aim0 = solveAim('rail', ROUTES[0])!
+    launch(s, 'rail', aim0.angle, aim0.power)
+    run(s, 5)
+    expect(s.deliveredByRoute[0]).toBeGreaterThanOrEqual(ROUTES[0].minDelivered)
+    s.status = 'round-over'; nextRound(s)
+    s.status = 'round-over'; nextRound(s)
+    s.status = 'round-over'; nextRound(s)
+    const sum = summarize(s)
+    expect(sum.passed).toBe(false)
+    expect(sum.routesPassed).toBe(1)
+    expect(sum.routeChecks[0].ok).toBe(true)
+    expect(sum.routeChecks[1].ok).toBe(false)
+    expect(sum.routeChecks[2].ok).toBe(false)
+  })
+
+  it('cumplir el mínimo de cajas dentro de la plataforma en las tres rutas aprueba el reto', () => {
+    const smart = (route: number): Mode => (route === 0 ? 'rail' : route === 1 ? 'rail' : 'ship')
+    const finished = play(smart)
+    const sum = summarize(finished)
+    expect(sum.routesPassed).toBe(ROUTES.length)
+    expect(sum.passed).toBe(true)
+  })
+})

@@ -8,17 +8,12 @@ export function isWorldId(value: string | null): value is WorldId {
   return value !== null && worldIdSet.has(value)
 }
 
-/** SPA route for one of the five worlds, used by links and deep links. */
+/** SPA route for one of the five worlds, relative to the Router basename. */
 export function gameRoute(world: WorldId): string {
-  return `${import.meta.env.BASE_URL}minijuegos?world=${world}`
+  return `/minijuegos?world=${world}`
 }
 
-export function unityWorldUrl(world: string, returnToAtlas = false): string {
-  const path = `${import.meta.env.BASE_URL}unity-minijuegos/index.html`
-  const url = new URL(path, window.location.origin)
-  url.searchParams.set('world', world)
-  if (returnToAtlas) {
-    url.searchParams.set('return', new URL(`${import.meta.env.BASE_URL}minijuegos#mundos`, window.location.origin).href)
-  }
-  return `${url.pathname}${url.search}`
+/** Public href with BASE_URL for native SVG <a> elements. */
+export function gameHref(world: WorldId): string {
+  return `${import.meta.env.BASE_URL}minijuegos?world=${world}`
 }

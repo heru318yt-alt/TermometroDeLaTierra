@@ -10,6 +10,14 @@ export function latestEvent(year: number): MapEvent | null {
 
 const GRATICULE_LON = [-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150]
 const GRATICULE_LAT = [-60, -30, 0, 30, 60]
+const GRATICULE_LATS = Array.from({ length: 18 }, (_, i) => -85 + i * 10)
+
+function meridianPath(lon: number) {
+  return GRATICULE_LATS.map((lat, i) => {
+    const { x, y } = project({ name: '', lat, lon })
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
+}
 
 /**
  * Mapa del mundo sincronizado con la línea del tiempo. El color del océano es
@@ -25,7 +33,7 @@ export function WorldTimeMap() {
 
   return <figure className="tl-map" aria-labelledby="tl-map-caption">
     <div className="tl-map-frame">
-      <svg viewBox="0 22 720 290" role="group" aria-label={`Mapa del mundo en ${label}. Anomalía global ${formatAnomaly(anomaly)}. ${visible.length} acontecimientos con sede visibles.`}>
+      <svg viewBox="0 25 720 295" role="group" aria-label={`Mapa del mundo en ${label}. Anomalía global ${formatAnomaly(anomaly)}. ${visible.length} acontecimientos con sede visibles.`}>
         <defs>
           <radialGradient id="tl-ocean" cx="50%" cy="45%" r="75%">
             <stop offset="0" stopColor={ocean} stopOpacity=".78" />
@@ -35,8 +43,12 @@ export function WorldTimeMap() {
         </defs>
         <rect y="0" width="720" height="360" fill="url(#tl-ocean)" className="tl-ocean" />
         <g className="tl-graticule">
-          {GRATICULE_LON.map(lon => <line key={lon} x1={(lon + 180) * 2} x2={(lon + 180) * 2} y1="0" y2="360" />)}
-          {GRATICULE_LAT.map(lat => <line key={lat} x1="0" x2="720" y1={(90 - lat) * 2} y2={(90 - lat) * 2} className={lat === 0 ? 'is-equator' : undefined} />)}
+          {GRATICULE_LON.map(lon => <path key={lon} d={meridianPath(lon)} />)}
+          {GRATICULE_LAT.map(lat => {
+            const start = project({ name: '', lat, lon: -180 })
+            const end = project({ name: '', lat, lon: 180 })
+            return <line key={lat} x1={start.x} x2={end.x} y1={start.y} y2={end.y} className={lat === 0 ? 'is-equator' : undefined} />
+          })}
         </g>
         <g className="tl-land" filter="url(#tl-land-shadow)">{(landPaths as string[]).map((d, i) => <path key={i} d={d} />)}</g>
         <g className="tl-pins">
@@ -44,13 +56,13 @@ export function WorldTimeMap() {
             const { x, y } = project(e.place!)
             const isCurrent = current?.id === e.id
             return <g key={e.id} className={`tl-pin${isCurrent ? ' is-current' : ''}`} transform={`translate(${x} ${y})`}
-              role="button" tabIndex={0} aria-label={`${e.year} · ${e.title} · ${e.place!.name}`}
+              role="button" tabIndex={0} data-sfx="date" aria-label={`${e.year} · ${e.title} · ${e.place!.name}`}
               onClick={() => select({ year: e.year, month: 1 })}
               onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select({ year: e.year, month: 1 }) } }}>
               {isCurrent && <circle r="14" className="tl-pin-pulse" />}
               <circle r={isCurrent ? 6.5 : 4} className="tl-pin-dot" />
-              {isCurrent && <g className="tl-pin-label" transform={`translate(${x > 560 ? -10 : 10} -12)`}>
-                <text textAnchor={x > 560 ? 'end' : 'start'}>{e.year} · {e.place!.name}</text>
+              {isCurrent && <g className="tl-pin-label" transform={`translate(${x > 540 ? -10 : 10} -12)`}>
+                <text textAnchor={x > 540 ? 'end' : 'start'}>{e.year} · {e.place!.name}</text>
               </g>}
             </g>
           })}

@@ -1,9 +1,10 @@
 /**
- * Finca equilibrada · motor del minijuego de Agricultura y ganadería.
+ * Finca equilibrada · motor arcade del minijuego de Agricultura y ganadería.
  *
- * Lógica pura y determinista. El jugador combina fertilizante, manejo de la
- * tierra y tamaño del hato según el estado del suelo. Todos los valores son
- * didácticos: no son mediciones de emisiones ni de producción reales.
+ * Lógica pura y determinista. En modo arcade las temporadas avanzan sin tope fijo:
+ * el agua y la materia orgánica se reponen parcialmente con buena adaptación, mientras
+ * el clima se vuelve más cambiante. El juego continúa hasta que la tierra útil o las
+ * cosechas colapsen (o el jugador guarde su marca).
  */
 export type Soil = 'fertile' | 'dry' | 'waterlogged' | 'degraded'
 export type Mgmt = 'rest' | 'graze' | 'crop'
@@ -11,13 +12,25 @@ export type Fert = 0 | 1 | 2 | 3
 export type Herd = 0 | 1 | 2 | 3
 export type Weather = 'normal' | 'drought' | 'rain'
 export type Status = 'playing' | 'finished'
+export type EndReason = 'land' | 'famine' | 'manual' | null
 
 export interface Choice { fert: Fert; mgmt: Mgmt; herd: Herd }
 
 export const SEASONS = 8
-export const WATER_STOCK = 60
-export const FERTILIZER_STOCK = 14
-export const LAND_LOSS = 10
+export const WATER_STOCK = 50
+export const FERTILIZER_STOCK = 12
+export const SCORE_BONUS_STEP = 45
+export const SCORE_BONUS_WATER = 6
+export const SCORE_BONUS_FERTILIZER = 2
+export const LAND_LOSS = 15
+export const MIN_LAND_ALIVE = 40
+export const MAX_FAMINE_STREAK = 3
+export const MIN_WIN_FOOD = 80
+export const MIN_WIN_ADAPTED = 5
+export const MIN_WIN_LAND = 70
+export const MAX_WIN_PER_FOOD = 0.85
+export const MIN_WIN_MGMT = 2
+export const MAX_WIN_REPEAT = 5
 
 export const SOILS: Soil[] = ['fertile', 'dry', 'waterlogged', 'degraded']
 export const MGMTS: Mgmt[] = ['rest', 'graze', 'crop']
@@ -68,7 +81,6 @@ export function fits(soil: Soil, choice: Choice) {
   return { mgmt: MGMT_FIT[soil][choice.mgmt], fert: FERT_FIT[soil][choice.fert], herd: HERD_FIT[soil][choice.herd] }
 }
 
-/** Adaptación de la combinación al terreno (0–1). */
 export function adaptation(soil: Soil, choice: Choice): number {
   const f = fits(soil, choice)
   return 0.4 * f.mgmt + 0.3 * f.fert + 0.3 * f.herd
@@ -127,6 +139,7 @@ export function evaluate(soil: Soil, weather: Weather, choice: Choice, landPct =
 export interface SeasonResult extends Outcome {
   multiplier: number
   bonus: number
+  scoreBonus: { water: number; fertilizer: number } | null
   season: number
   weather: Weather
   soilBefore: Soil
@@ -137,6 +150,7 @@ export interface SeasonResult extends Outcome {
 export interface GameState {
   season: number
   status: Status
+  endReason: EndReason
   rng: number
   soil: Soil
   weather: Weather
@@ -149,10 +163,12 @@ export interface GameState {
   n2o: number
   co2: number
   history: SeasonResult[]
-  /** Temporadas seguidas bien adaptadas al terreno (adaptación ≥ 80 %). */
   streak: number
   bestStreak: number
+  famineStreak: number
   bonus: number
+  challengeCleared: boolean
+  scoreMilestonesClaimed: number
 }
 
 function nextRandom(state: GameState): number {
@@ -165,14 +181,16 @@ function nextRandom(state: GameState): number {
 
 function rollWeather(state: GameState): Weather {
   const r = nextRandom(state)
-  return r < 0.5 ? 'normal' : r < 0.75 ? 'drought' : 'rain'
+  const normalCutoff = state.season >= 12 ? 0.25 : state.season >= 6 ? 0.36 : 0.5
+  const droughtCutoff = normalCutoff + (1 - normalCutoff) * 0.5
+  return r < normalCutoff ? 'normal' : r < droughtCutoff ? 'drought' : 'rain'
 }
 
 export function createGame(seed = 1989): GameState {
   return {
-    season: 0, status: 'playing', rng: seed >>> 0, soil: 'fertile', weather: 'normal', weatherSoilBefore: 'fertile',
+    season: 0, status: 'playing', endReason: null, rng: seed >>> 0, soil: 'fertile', weather: 'normal', weatherSoilBefore: 'fertile',
     water: WATER_STOCK, fertilizer: FERTILIZER_STOCK, land: 100, food: 0, ch4: 0, n2o: 0, co2: 0, history: [],
-    streak: 0, bestStreak: 0, bonus: 0,
+    streak: 0, bestStreak: 0, famineStreak: 0, bonus: 0, challengeCleared: false, scoreMilestonesClaimed: 0,
   }
 }
 
@@ -184,47 +202,138 @@ export function canAfford(state: GameState, choice: Choice): { ok: boolean; reas
   return { ok: true }
 }
 
-/** Confirma la combinación: calcula la temporada, gasta recursos y pasa a la siguiente. */
+export function finishManual(state: GameState) {
+  if (state.status !== 'playing') return
+  state.status = 'finished'
+  state.endReason = 'manual'
+}
+
+export const STREAK_ADAPTATION = 0.8
+export const streakMultiplier = (streak: number) => streak >= 4 ? 1.5 : streak >= 2 ? 1.25 : 1
+
+export const score = (state: GameState) => Math.round(state.food)
+export const totalScore = (state: GameState) => Math.round(state.food + state.bonus)
+export const totalEmissions = (state: GameState) => Math.max(0, state.ch4 + state.n2o + state.co2)
+
+export interface WinChecks {
+  food: boolean
+  adapted: boolean
+  soil: boolean
+  emissions: boolean
+  variety: boolean
+}
+
+function evaluateChecks(state: GameState): {
+  s: number
+  total: number
+  emissions: number
+  perFood: number
+  adaptedSeasons: number
+  distinctMgmt: number
+  maxRepeatedChoice: number
+  checks: WinChecks
+} {
+  const emissions = totalEmissions(state), s = score(state), total = totalScore(state)
+  const perFood = s > 0 ? emissions / s : 0
+  const adaptedSeasons = state.history.filter(h => h.adaptation >= STREAK_ADAPTATION).length
+  const distinctMgmt = new Set(state.history.map(h => h.choice.mgmt)).size
+  const choiceCounts = new Map<string, number>()
+  for (const h of state.history) {
+    const key = `${h.choice.mgmt}-${h.choice.fert}-${h.choice.herd}`
+    choiceCounts.set(key, (choiceCounts.get(key) ?? 0) + 1)
+  }
+  const maxRepeatedChoice = choiceCounts.size > 0 ? Math.max(...choiceCounts.values()) : 0
+  const repeatLimit = Math.max(MAX_WIN_REPEAT, Math.floor(state.history.length * 0.65))
+  const checks: WinChecks = {
+    food: total >= MIN_WIN_FOOD,
+    adapted: adaptedSeasons >= MIN_WIN_ADAPTED,
+    soil: state.soil !== 'degraded' && state.land >= MIN_WIN_LAND,
+    emissions: s > 0 && perFood <= MAX_WIN_PER_FOOD,
+    variety: distinctMgmt >= MIN_WIN_MGMT && maxRepeatedChoice <= repeatLimit,
+  }
+  return { s, total, emissions, perFood, adaptedSeasons, distinctMgmt, maxRepeatedChoice, checks }
+}
+
+export function hasReachedChallenge(state: GameState): boolean {
+  const { checks } = evaluateChecks(state)
+  return checks.food && checks.adapted && checks.soil && checks.emissions && checks.variety
+}
+
+/** Confirma la combinación en modo arcade: evalúa temporada, repone parte estacional y sigue adelante. */
 export function play(state: GameState, choice: Choice): SeasonResult | null {
   if (!canAfford(state, choice).ok) return null
   const outcome = evaluate(state.soil, state.weather, choice, state.land)
   const soilBefore = state.soil, weather = state.weather
   state.water -= outcome.water; state.fertilizer -= outcome.fertilizer
-  // Racha: adaptar cada temporada al terreno multiplica los alimentos ganados.
   state.streak = outcome.adaptation >= STREAK_ADAPTATION ? state.streak + 1 : 0
   state.bestStreak = Math.max(state.bestStreak, state.streak)
   const multiplier = streakMultiplier(state.streak)
   const bonus = outcome.food * (multiplier - 1)
   state.bonus += bonus
   state.food += outcome.food; state.ch4 += outcome.ch4; state.n2o += outcome.n2o; state.co2 += outcome.co2
+  const milestones = Math.floor(totalScore(state) / SCORE_BONUS_STEP)
+  let scoreBonus: { water: number; fertilizer: number } | null = null
+  if (milestones > state.scoreMilestonesClaimed) {
+    const delta = milestones - state.scoreMilestonesClaimed
+    const waterBefore = state.water
+    const fertBefore = state.fertilizer
+    state.water = Math.min(WATER_STOCK, state.water + delta * SCORE_BONUS_WATER)
+    state.fertilizer = Math.min(FERTILIZER_STOCK, state.fertilizer + delta * SCORE_BONUS_FERTILIZER)
+    const addedWater = state.water - waterBefore
+    const addedFert = state.fertilizer - fertBefore
+    if (addedWater > 0 || addedFert > 0) scoreBonus = { water: addedWater, fertilizer: addedFert }
+    state.scoreMilestonesClaimed = milestones
+  }
   state.soil = outcome.soilAfter
   if (state.soil === 'degraded') state.land = Math.max(0, state.land - LAND_LOSS)
-  const result: SeasonResult = { ...outcome, multiplier, bonus, season: state.season, weather, soilBefore, choice: { ...choice }, landAfter: state.land }
+  state.famineStreak = outcome.food < 2 ? state.famineStreak + 1 : 0
+
+  const result: SeasonResult = { ...outcome, multiplier, bonus, scoreBonus, season: state.season, weather, soilBefore, choice: { ...choice }, landAfter: state.land }
   state.history.push(result)
   state.season++
-  if (state.season >= SEASONS) state.status = 'finished'
-  else {
+
+  if (!state.challengeCleared && hasReachedChallenge(state)) {
+    state.challengeCleared = true
+  }
+
+  if (state.land <= MIN_LAND_ALIVE) {
+    state.status = 'finished'
+    state.endReason = 'land'
+  } else if (state.famineStreak >= MAX_FAMINE_STREAK) {
+    state.status = 'finished'
+    state.endReason = 'famine'
+  } else {
     state.weather = rollWeather(state)
+    const waterRecharge = state.weather === 'rain' ? 6 : state.weather === 'normal' ? 4 : 1
+    state.water = Math.min(WATER_STOCK, state.water + waterRecharge)
+    if (outcome.adaptation >= STREAK_ADAPTATION) {
+      state.fertilizer = Math.min(FERTILIZER_STOCK, state.fertilizer + 1)
+    }
     state.weatherSoilBefore = state.soil
     state.soil = applyWeather(state.soil, state.weather)
+    if (state.soil === 'fertile' && state.weather === 'normal') {
+      const fertileCount = state.history.filter(h => h.soilBefore === 'fertile').length
+      const lastTwoFertile = state.history.length >= 2 && state.history.slice(-2).every(h => h.soilBefore === 'fertile')
+      if (lastTwoFertile || fertileCount >= 3) {
+        state.weather = (state.rng & 1) === 0 ? 'drought' : 'rain'
+        state.weatherSoilBefore = state.soil
+        state.soil = applyWeather(state.soil, state.weather)
+      }
+    }
   }
   return result
 }
-
-export const STREAK_ADAPTATION = 0.8
-/** ×1 → ×1.25 desde la 2.ª temporada adaptada seguida → ×1.5 desde la 4.ª. */
-export const streakMultiplier = (streak: number) => streak >= 4 ? 1.5 : streak >= 2 ? 1.25 : 1
-
-export const score = (state: GameState) => Math.round(state.food)
-/** Alimentos + bono por racha de temporadas adaptadas. */
-export const totalScore = (state: GameState) => Math.round(state.food + state.bonus)
-export const totalEmissions = (state: GameState) => Math.max(0, state.ch4 + state.n2o + state.co2)
 
 export interface Summary {
   score: number
   total: number
   bonus: number
   bestStreak: number
+  adaptedSeasons: number
+  distinctMgmt: number
+  maxRepeatedChoice: number
+  seasons: number
+  endReason: EndReason
   ch4: number
   n2o: number
   co2: number
@@ -235,15 +344,21 @@ export interface Summary {
   water: number
   fertilizer: number
   balanced: boolean
+  checks: WinChecks
+  passed: boolean
 }
 
 export function summarize(state: GameState): Summary {
-  const emissions = totalEmissions(state), s = score(state)
-  const perFood = s > 0 ? emissions / s : 0
+  const { s, total, emissions, perFood, adaptedSeasons, distinctMgmt, maxRepeatedChoice, checks } = evaluateChecks(state)
+  const passed = state.challengeCleared || (checks.food && checks.adapted && checks.soil && checks.emissions && checks.variety)
   return {
-    score: s, total: totalScore(state), bonus: Math.round(state.bonus), bestStreak: state.bestStreak, ch4: state.ch4, n2o: state.n2o, co2: state.co2, emissions, perFood, soil: state.soil, land: state.land,
+    score: s, total, bonus: Math.round(state.bonus), bestStreak: state.bestStreak, adaptedSeasons, distinctMgmt, maxRepeatedChoice,
+    seasons: state.season, endReason: state.endReason,
+    ch4: state.ch4, n2o: state.n2o, co2: state.co2, emissions, perFood, soil: state.soil, land: state.land,
     water: state.water, fertilizer: state.fertilizer,
-    balanced: s >= 70 && state.soil !== 'degraded' && state.land >= 80 && perFood <= 0.7,
+    balanced: total >= 95 && state.soil !== 'degraded' && state.land >= 80 && perFood <= 0.7,
+    checks,
+    passed,
   }
 }
 
@@ -253,7 +368,6 @@ export function allChoices(): Choice[] {
   return out
 }
 
-/** Pista cualitativa (sin números) sobre qué parte de la combinación encaja peor. */
 export function weakestPart(soil: Soil, choice: Choice): 'mgmt' | 'fert' | 'herd' | null {
   const f = fits(soil, choice)
   const entries = [['mgmt', f.mgmt], ['fert', f.fert], ['herd', f.herd]] as const

@@ -16,7 +16,7 @@ export function ClimateSummaryPanel() {
       <dd className="climate-value">{latest ? `${temperature.format(latest.anomaly)} °C` : 'Sin datos disponibles'}</dd>
       <dt>Último año completo{summary.latestAnnual ? ` · ${summary.latestAnnual.year}` : ''}</dt>
       <dd>{summary.latestAnnual ? `${temperature.format(summary.latestAnnual.anomaly)} °C (J-D)` : 'Sin datos disponibles'}</dd>
-      <dt>Fuente</dt><dd><a href={summary.source.url}>{summary.source.name} ↗</a></dd>
+      <dt>Fuente</dt><dd><a href={summary.source.url} target="_blank" rel="noreferrer">{summary.source.name} ↗</a></dd>
       <dt>Período de referencia</dt><dd>{summary.source.referencePeriod}</dd>
       <dt>Fecha de descarga</dt><dd><time dateTime={summary.downloadedAt}>{updatedFormat.format(new Date(summary.downloadedAt))} (Bogotá)</time></dd>
     </dl>

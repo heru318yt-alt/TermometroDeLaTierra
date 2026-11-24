@@ -25,7 +25,7 @@ export function ClimateTimeline() {
 
     <div className="historical-shortcuts" aria-label="Ir al inicio de un período histórico">
       <span className="shortcuts-label">Ir a un período</span>
-      {historicalPeriods.map(period => <button key={period.start} onClick={() => select({ year: period.start, month: 1 })} aria-label={period.label}>{period.label}</button>)}
+      {historicalPeriods.map(period => <button type="button" key={period.start} onClick={() => select({ year: period.start, month: 1 })} aria-label={period.label}>{period.label}</button>)}
     </div>
     <ClimatePlaybackControls />
   </section>

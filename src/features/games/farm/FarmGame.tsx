@@ -1,10 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { playSfx } from '../../audio/sfx'
 import { useBestScore, useFloaters, useShake } from '../shared/hooks'
 import { BestLine, FloaterLayer, Gauge, Icon, ResultGrid, Stat, Streak } from '../shared/ui'
 import {
-  FERTILIZER_STOCK, FERTS, FERT_LABEL, HERDS, HERD_LABEL, MGMTS, MGMT_LABEL, SEASONS, SOIL_LABEL, SOIL_TEXT, STREAK_ADAPTATION, WATER_STOCK, WEATHER_LABEL,
-  canAfford, costOf, createGame, play, streakMultiplier, summarize, totalScore, weakestPart,
+  FERTILIZER_STOCK, FERTS, FERT_LABEL, HERDS, HERD_LABEL, LAND_LOSS, MAX_FAMINE_STREAK, MAX_WIN_PER_FOOD, MAX_WIN_REPEAT,
+  MGMTS, MGMT_LABEL, MIN_LAND_ALIVE, MIN_WIN_ADAPTED, MIN_WIN_FOOD, MIN_WIN_LAND, MIN_WIN_MGMT,
+  SCORE_BONUS_FERTILIZER, SCORE_BONUS_STEP, SCORE_BONUS_WATER,
+  SOIL_LABEL, SOIL_TEXT, STREAK_ADAPTATION, WATER_STOCK, WEATHER_LABEL,
+  adaptation, canAfford, costOf, createGame, finishManual, play, streakMultiplier, summarize, totalScore, weakestPart,
   type Choice, type Fert, type GameState, type Herd, type Mgmt, type SeasonResult, type Soil, type Summary,
 } from './engine'
 import { SoilPicture } from './SoilPicture'
@@ -15,6 +18,12 @@ type Phase = 'intro' | 'choosing' | 'result' | 'final'
 const MGMT_HINT: Record<Mgmt, string> = { rest: 'sin producir: el suelo se recupera', graze: 'animales en pasto, poco cultivo', crop: 'cultivos: mucha producción si el suelo responde' }
 const FERT_COST_TEXT: Record<Fert, string> = { 0: '0', 1: '1', 2: '2', 3: '3' }
 const HERD_WATER: Record<Herd, number> = { 0: 0, 1: 1, 2: 2, 3: 4 }
+const SOIL_GUIDE: Record<Soil, string> = {
+  fertile: 'Recomendación: Cultivo con fertilizante Orgánico o Nitrogenado medio y hato pequeño o mediano.',
+  dry: 'Recomendación: Pastoreo o Descanso, fertilizante Orgánico y hato pequeño o sin hato para conservar humedad.',
+  waterlogged: 'Recomendación: Descanso o Pastoreo suave, fertilizante Orgánico o Ninguno y hato pequeño o sin hato.',
+  degraded: 'Recomendación: Descanso, fertilizante Orgánico y Sin hato para recuperar la tierra útil.',
+}
 
 const TIP: Record<Soil, Record<'mgmt' | 'fert' | 'herd', string>> = {
   fertile: { mgmt: 'Un suelo fértil rinde más cultivado que en descanso.', fert: 'En suelo fértil, el exceso de nitrógeno se desperdicia y emite óxido nitroso.', herd: 'Un hato muy grande sobrepastorea incluso un suelo fértil.' },
@@ -31,15 +40,19 @@ function tipFor(result: SeasonResult): string {
 }
 
 function explain(s: Summary): string {
-  if (s.score === 0) return 'No produjiste alimentos: el descanso recupera el suelo pero la gente también necesita comer.'
-  if (s.soil === 'degraded' || s.land < 80) return 'Forzar la producción degradó el suelo y redujo la tierra útil. No hay una solución universal: cada terreno pide una combinación distinta.'
-  if (s.balanced) return 'Adaptaste cada temporada al terreno: produjiste alimentos con pocas emisiones por unidad y cuidaste el suelo.'
-  return 'El metano viene del hato, el óxido nitroso de los fertilizantes y el CO₂ del suelo que se degrada. Producir más suele tener un costo en emisiones o en suelo.'
+  if (s.passed) return 'Adaptaste el manejo a cada cambio de terreno, superaste la meta arcade con bajas emisiones por unidad y cuidaste la finca.'
+  if (s.score === 0) return `No produjiste alimentos: la finca necesita al menos ${MIN_WIN_FOOD} puntos adaptando tu estrategia.`
+  if (s.endReason === 'land') return `La tierra útil cayó a ${s.land} % por degradación repetida. Deja descansar los suelos frágiles.`
+  if (s.endReason === 'famine') return `Acumulaste ${MAX_FAMINE_STREAK} temporadas seguidas sin cosecha.`
+  if (!s.checks.soil) return 'Forzar la producción degradó el suelo. No hay una solución universal: cada terreno pide una combinación distinta.'
+  if (!s.checks.variety) return `Faltó variedad de manejo (${s.distinctMgmt} tipo usado). Combina manejos distintos al cambiar el clima.`
+  if (!s.checks.adapted) return `Solo lograste ${s.adaptedSeasons} de ${MIN_WIN_ADAPTED} temporadas adaptadas (≥ 80 %).`
+  if (!s.checks.food) return `Alcanzaste ${s.total} de ${MIN_WIN_FOOD} puntos mínimos de alimentos.`
+  return `Las emisiones por alimento (${s.perFood.toFixed(2)}) superaron el máximo de ${MAX_WIN_PER_FOOD.toFixed(2)}.`
 }
 
 const fmt = (n: number) => (Math.round(n * 10) / 10).toFixed(1)
 
-/* ---- Iconos de las opciones ---- */
 const ic = (children: ReactNode, bg: string) => <svg viewBox="0 0 32 32" aria-hidden="true" className="gs-choice-icon"><rect x="1" y="1" width="30" height="30" rx="8" fill={bg} />{children}</svg>
 const cowHead = (x: number, y: number, s = 1) => <g key={`${x}-${y}`} transform={`translate(${x} ${y}) scale(${s})`}><rect x="-4" y="-3.5" width="8" height="7.5" rx="3" fill="#f7f3ea" /><rect x="-2.6" y="1.5" width="5.2" height="3" rx="1.4" fill="#f2a5a0" /><path d="M-4-2.5-6-4.5M4-2.5l2-2" stroke="#d8c7a0" strokeWidth="1.2" strokeLinecap="round" /><circle cx="-1.6" cy="-.8" r=".7" fill="#2c2626" /><circle cx="1.6" cy="-.8" r=".7" fill="#2c2626" /><path d="M-4-1q1.5-2 3-1" stroke="#2c2626" strokeWidth="1.2" fill="none" /></g>
 const MGMT_ICON: Record<Mgmt, ReactNode> = {
@@ -69,7 +82,10 @@ function EmissionBars({ ch4, n2o, co2 }: { ch4: number; n2o: number; co2: number
   return <div className="farm-ems">{row('Metano (hato)', ch4, 'is-ch4')}{row('Óxido nitroso (fertilizante)', n2o, 'is-n2o')}{row('CO₂ del suelo', co2, 'is-co2')}</div>
 }
 
-export function FarmGame() {
+export function FarmGame({ onComplete, onNext, nextLabel }: { onComplete?: () => void; onNext?: () => void; nextLabel?: string } = {}) {
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
+  const completedThisRun = useRef(false)
   const [game, setGame] = useState<GameState>(() => createGame())
   const [phase, setPhase] = useState<Phase>('intro')
   const [choice, setChoice] = useState<Choice>({ mgmt: 'crop', fert: 1, herd: 1 })
@@ -83,31 +99,132 @@ export function FarmGame() {
   const cost = useMemo(() => costOf(game.soil, game.weather, choice), [game.soil, game.weather, choice])
   const afford = canAfford(game, choice)
   const summary = phase === 'final' ? summarize(game) : null
+  const helpAlert = message || (phase === 'choosing' && !afford.ok ? (afford.reason ?? '') : '')
 
-  function start() { playSfx('adventure'); setGame(createGame(Math.floor(Math.random() * 1e9))); setResult(null); setMessage(''); setNewBest(false); setPhase('choosing') }
+  function start() {
+    playSfx('adventure')
+    completedThisRun.current = false
+    setGame(createGame(Math.floor(Math.random() * 1e9)))
+    setResult(null); setMessage(''); setNewBest(false); setPhase('choosing')
+  }
 
   function confirm() {
+    if (phase !== 'choosing') return
     if (!afford.ok) { setMessage(afford.reason ?? ''); playSfx('warn'); return }
     const next = structuredClone(game)
     const season = play(next, choice)
     if (!season) return
     const gained = season.food + season.bonus
     floaters.push(`+${fmt(gained)} alimentos`, 50, 40, season.multiplier > 1 ? 'combo' : gained > 0 ? 'good' : 'info')
+    if (season.scoreBonus) {
+      const bonusParts = [
+        season.scoreBonus.water > 0 ? `+${season.scoreBonus.water} agua` : '',
+        season.scoreBonus.fertilizer > 0 ? `+${season.scoreBonus.fertilizer} fert.` : '',
+      ].filter(Boolean).join(' · ')
+      if (bonusParts) floaters.push(`${bonusParts} (bono puntaje)`, 50, 58, 'good')
+    }
     if (season.trend === 'worsens') { shake(); playSfx('loss') } else if (season.multiplier > 1) playSfx('combo'); else playSfx('gain')
+    if (next.challengeCleared && !completedThisRun.current) {
+      completedThisRun.current = true
+      submitBest(totalScore(next))
+      onCompleteRef.current?.()
+    }
     setGame(next); setResult(season); setMessage(''); setPhase('result')
   }
 
   function proceed() {
-    if (game.status === 'finished') { const s = summarize(game); setNewBest(submitBest(s.total)); setPhase('final'); playSfx(s.balanced ? 'victory' : 'win'); return }
+    if (phase !== 'result') return
+    if (game.status === 'finished') {
+      const s = summarize(game)
+      setNewBest(submitBest(s.total)); setPhase('final')
+      if (!completedThisRun.current && s.passed) {
+        completedThisRun.current = true
+        onCompleteRef.current?.()
+      } else {
+        playSfx(s.passed ? 'win' : 'loss')
+      }
+      return
+    }
+    playSfx('open')
     setResult(null); setPhase('choosing')
   }
 
+  function finishEarly() {
+    if (phase !== 'choosing' || game.season === 0) return
+    const next = structuredClone(game)
+    finishManual(next)
+    const s = summarize(next)
+    setGame(next)
+    setNewBest(submitBest(s.total))
+    setPhase('final')
+    if (!completedThisRun.current && s.passed) {
+      completedThisRun.current = true
+      onCompleteRef.current?.()
+    } else {
+      playSfx(s.passed ? 'win' : 'loss')
+    }
+  }
+
   const shownSoil: Soil = phase === 'result' && result ? result.soilBefore : game.soil
-  const weatherNote = game.weatherSoilBefore !== game.soil
-    ? `${WEATHER_LABEL[game.weather]}: el terreno pasó de ${SOIL_LABEL[game.weatherSoilBefore].toLowerCase()} a ${SOIL_LABEL[game.soil].toLowerCase()}.`
-    : game.season === 0 ? 'Temporada normal.' : `${WEATHER_LABEL[game.weather]}: el terreno no cambió.`
-  const seasonNumber = Math.min(game.season + 1, SEASONS)
+  const shownWeather = phase === 'result' && result ? result.weather : game.weather
+  const weatherNote = phase === 'result' && result
+    ? `${WEATHER_LABEL[result.weather]} · temporada ${result.season + 1} evaluada.`
+    : game.weatherSoilBefore !== game.soil
+      ? `${WEATHER_LABEL[game.weather]}: el terreno pasó de ${SOIL_LABEL[game.weatherSoilBefore].toLowerCase()} a ${SOIL_LABEL[game.soil].toLowerCase()}.`
+      : game.season === 0 ? 'Temporada normal.' : `${WEATHER_LABEL[game.weather]}: el terreno no cambió.`
+  const seasonNumber = game.season + 1
   const nextMult = streakMultiplier(game.streak + 1)
+  const adaptedSoFar = game.history.filter(h => h.adaptation >= STREAK_ADAPTATION).length
+  const sameChoiceCount = game.history.filter(
+    h => h.choice.mgmt === choice.mgmt && h.choice.fert === choice.fert && h.choice.herd === choice.herd,
+  ).length
+  const repeatLimit = Math.max(MAX_WIN_REPEAT, Math.floor(game.history.length * 0.65))
+  const usedMgmts = new Set(game.history.map(h => h.choice.mgmt))
+  const lateSingleMgmt = !game.challengeCleared && game.season >= 5 && usedMgmts.size === 1 && usedMgmts.has(choice.mgmt)
+
+  const liveFit = adaptation(game.soil, choice)
+  const liveWeak = weakestPart(game.soil, choice)
+  const coach = (() => {
+    if (!afford.ok) {
+      return {
+        tone: 'bad' as const,
+        tag: 'RECURSOS INSUFICIENTES',
+        text: 'Te falta agua o fertilizante para esta mezcla: baja fertilizante, reduce el hato o usa Descanso/Pastoreo.',
+      }
+    }
+    if (!game.challengeCleared && (sameChoiceCount >= repeatLimit || lateSingleMgmt)) {
+      return {
+        tone: 'warn' as const,
+        tag: 'VARÍA TU ESTRATEGIA',
+        text: lateSingleMgmt
+          ? 'Solo usaste un tipo de manejo. Combina al menos dos manejos distintos según cambie el terreno.'
+          : `Evita repetir exactamente la misma mezcla sin adaptar al terreno.`,
+      }
+    }
+    if (liveFit >= STREAK_ADAPTATION) {
+      return {
+        tone: 'ok' as const,
+        tag: 'BUENA COMBINACIÓN',
+        text: game.challengeCleared
+          ? `¡Reto cumplido! Se adapta bien al suelo ${SOIL_LABEL[game.soil].toLowerCase()} (${Math.round(liveFit * 100)} %). Sigue sumando tu récord.`
+          : `Se adapta muy bien al suelo ${SOIL_LABEL[game.soil].toLowerCase()} (${Math.round(liveFit * 100)} %) y mantiene tu racha.`,
+      }
+    }
+    if (liveFit >= 0.5) {
+      return {
+        tone: 'warn' as const,
+        tag: 'ADAPTACIÓN MEDIA',
+        text: liveWeak
+          ? `Ajuste sugerido: ${TIP[game.soil][liveWeak]}`
+          : 'Combinación aceptable, aunque puedes afinar una opción para llegar al 80 % y sumar racha.',
+      }
+    }
+    return {
+      tone: 'bad' as const,
+      tag: 'DEGRADARÁ EL SUELO',
+      text: liveWeak ? TIP[game.soil][liveWeak] : SOIL_GUIDE[game.soil],
+    }
+  })()
 
   const group = <T extends string | number>(label: string, items: T[], current: T, set: (v: T) => void, text: (v: T) => string, hint: (v: T) => string, icon: (v: T) => ReactNode) =>
     <div className="farm-group" role="radiogroup" aria-label={label}>
@@ -121,9 +238,10 @@ export function FarmGame() {
 
   return <div className={`gs-game farm-game${shaking ? ' is-shaking' : ''}`}>
     <div className="gs-hud" aria-label="Indicadores de la partida">
-      <Stat label="TEMPORADA" value={`${seasonNumber} de ${SEASONS}`} icon={Icon.calendar} />
+      <Stat label="TEMPORADA ARCADE" value={`#${seasonNumber}`} icon={Icon.calendar} />
       <Stat label="ALIMENTOS (PUNTAJE)" value={totalScore(game)} icon={Icon.wheat} tone="accent" />
-      <Streak multiplier={streakMultiplier(game.streak)} detail={`${game.streak} temporada${game.streak === 1 ? '' : 's'} adaptada${game.streak === 1 ? '' : 's'}`} />
+      <Stat label="META DEL RETO" value={game.challengeCleared ? '★ CUMPLIDO' : `${totalScore(game)} / ${MIN_WIN_FOOD}`} icon={Icon.check} tone={game.challengeCleared ? 'ok' : undefined} />
+      <Streak multiplier={streakMultiplier(game.streak)} detail={`${game.streak} adaptada${game.streak === 1 ? '' : 's'} · ${adaptedSoFar}/${MIN_WIN_ADAPTED} meta`} />
       <Gauge label="AGUA" value={game.water} max={WATER_STOCK} icon={Icon.drop} />
       <Gauge label="FERTILIZANTE" value={game.fertilizer} max={FERTILIZER_STOCK} icon={Icon.sack} />
       <Gauge label="TIERRA ÚTIL" value={game.land} max={100} icon={Icon.land} text={`${game.land} %`} />
@@ -132,40 +250,57 @@ export function FarmGame() {
     <div className="farm-main">
       <aside className="farm-side" aria-label="Terreno actual">
         <div className="farm-picture">
-          <SoilPicture soil={shownSoil} weather={game.weather} herd={choice.herd} mgmt={choice.mgmt} />
+          <SoilPicture soil={shownSoil} weather={shownWeather} herd={choice.herd} mgmt={choice.mgmt} />
           <span className={`farm-soil-tag is-${shownSoil}`}>Suelo {SOIL_LABEL[shownSoil].toLowerCase()}</span>
           <FloaterLayer items={floaters.items} />
         </div>
         <p className="eyebrow">TERRENO ACTUAL</p>
         <h3>Suelo {SOIL_LABEL[shownSoil].toLowerCase()}</h3>
         <p>{SOIL_TEXT[shownSoil]}</p>
+        <p className="farm-soil-guide">{SOIL_GUIDE[shownSoil]}</p>
         <p className={`farm-weather is-${game.weather}`}>{weatherNote}</p>
       </aside>
 
       <div className="gs-stage farm-center">
         {phase === 'choosing' && <>
-        {group<Mgmt>('Manejo de la tierra', MGMTS, choice.mgmt, mgmt => setChoice({ ...choice, mgmt }), v => MGMT_LABEL[v], v => MGMT_HINT[v], v => MGMT_ICON[v])}
-        {group<Fert>('Fertilizante', FERTS, choice.fert, fert => setChoice({ ...choice, fert }), v => FERT_LABEL[v], v => `cuesta ${FERT_COST_TEXT[v]} de fertilizante`, v => FERT_ICON[v])}
-        {group<Herd>('Tamaño del hato', HERDS, choice.herd, herd => setChoice({ ...choice, herd }), v => HERD_LABEL[v], v => `agua +${HERD_WATER[v]}`, v => HERD_ICON[v])}
-        <div className="farm-confirm">
-          <p className={afford.ok ? '' : 'is-over'}>
-            <span className="farm-chip">{Icon.drop} agua {cost.water}</span>
-            <span className="farm-chip">{Icon.sack} fertilizante {cost.fertilizer}</span>
-            <span className="farm-cost-text">Costo de la combinación: agua {cost.water} · fertilizante {cost.fertilizer}</span>
-          </p>
-          <button type="button" className="button" disabled={phase !== 'choosing' || !afford.ok} onClick={confirm}>Confirmar temporada ↗</button>
-        </div>
-        <p className="farm-streak-hint">Si esta temporada se adapta al terreno (≥ {Math.round(STREAK_ADAPTATION * 100)} %), sus alimentos valen ×{nextMult}.</p>
+          <div className="farm-steps" aria-label="Pasos de decisión">
+            <span><b>1.</b> Lee el suelo (izquierda)</span>
+            <span><b>2.</b> Elige manejo, fertilizante y hato</span>
+            <span><b>3.</b> Confirma temporada</span>
+          </div>
+          {group<Mgmt>('Manejo de la tierra', MGMTS, choice.mgmt, mgmt => setChoice({ ...choice, mgmt }), v => MGMT_LABEL[v], v => MGMT_HINT[v], v => MGMT_ICON[v])}
+          {group<Fert>('Fertilizante', FERTS, choice.fert, fert => setChoice({ ...choice, fert }), v => FERT_LABEL[v], v => `cuesta ${FERT_COST_TEXT[v]} de fertilizante`, v => FERT_ICON[v])}
+          {group<Herd>('Tamaño del hato', HERDS, choice.herd, herd => setChoice({ ...choice, herd }), v => HERD_LABEL[v], v => `agua +${HERD_WATER[v]}`, v => HERD_ICON[v])}
+          <div className={`gs-coach is-${coach.tone}`} aria-live="polite">
+            <span className="gs-coach-tag">{coach.tag}</span>
+            <span>{coach.text}</span>
+          </div>
+          <div className="farm-confirm">
+            <p className={afford.ok ? '' : 'is-over'}>
+              <span className="farm-chip">{Icon.drop} agua {cost.water}</span>
+              <span className="farm-chip">{Icon.sack} fertilizante {cost.fertilizer}</span>
+              <span className="farm-cost-text">Costo de la combinación: agua {cost.water} · fertilizante {cost.fertilizer}</span>
+            </p>
+            <div className="unity-toolbar-actions">
+              <button type="button" className="button" data-sfx="none" disabled={phase !== 'choosing' || !afford.ok} onClick={confirm}>Confirmar temporada ↗</button>
+              {game.season >= 1 && <button type="button" className="gs-retry-btn" data-sfx="open" onClick={finishEarly}>Finalizar y guardar</button>}
+            </div>
+          </div>
+          <p className="farm-streak-hint">Si esta temporada se adapta (≥ {Math.round(STREAK_ADAPTATION * 100)} %), sumas ×{nextMult} y recuperas +1 de fertilizante orgánico. Cada {SCORE_BONUS_STEP} pts recibes +{SCORE_BONUS_WATER} de agua y +{SCORE_BONUS_FERTILIZER} de fertilizante.</p>
         </>}
 
         {phase === 'intro' && <div className="gs-overlay" role="dialog" aria-label="Finca equilibrada · instrucciones">
           <div className="gs-card">
-            <p className="eyebrow">CONTEXTO · AGRICULTURA Y GANADERÍA</p>
+            <p className="eyebrow">MODO ARCADE · AGRICULTURA Y GANADERÍA</p>
             <h3>Finca equilibrada</h3>
-            <p>Durante {SEASONS} temporadas, combina el manejo de la tierra, el fertilizante y el tamaño del hato. No hay una mejor combinación para todo: el estado del suelo, que se ve en el costado, cambia con el clima y con tus decisiones.</p>
-            <p>El agua ({WATER_STOCK}) y el fertilizante ({FERTILIZER_STOCK}) no se reponen, y la tierra degradada se pierde. Después de cada temporada verás las emisiones de metano (hato), óxido nitroso (fertilizantes) y CO₂ (suelo).</p>
-            <p className="gs-rule"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 14h6l-1 8 8-12h-6l1-8Z" /></svg><span>Racha: temporadas seguidas bien adaptadas al terreno multiplican los alimentos (×1.25 desde la 2.ª, ×1.5 desde la 4.ª).</span></p>
-            <button type="button" className="button" onClick={start}>Empezar ↗</button>
+            <p>Gestiona la finca temporada tras temporada sin tope fijo. El agua ({WATER_STOCK}) y el fertilizante ({FERTILIZER_STOCK}) parten más ajustados y recuperan un pequeño margen al adaptarte bien al clima cambiante. La tierra degradada pierde {LAND_LOSS} % por golpe (límite mínimo {MIN_LAND_ALIVE} %).</p>
+            <ul className="farm-goals">
+              <li>Meta del reto: alcanza <b>{MIN_WIN_FOOD} puntos</b> de alimentos con ≤ <b>{MAX_WIN_PER_FOOD.toFixed(2)}</b> emisiones por alimento.</li>
+              <li>Logra mínimo <b>{MIN_WIN_ADAPTED} temporadas</b> adaptadas (≥ {Math.round(STREAK_ADAPTATION * 100)} %), mantén la tierra en <b>≥ {MIN_WIN_LAND} %</b> y combina ≥ <b>{MIN_WIN_MGMT} manejos</b>.</li>
+              <li>Después de cumplir la meta seguirás jugando sin pausa para conseguir el mayor puntaje posible.</li>
+            </ul>
+            <p className="gs-rule"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 14h6l-1 8 8-12h-6l1-8Z" /></svg><span>Racha: temporadas seguidas bien adaptadas multiplican los alimentos (×1.25 desde la 2.ª, ×1.5 desde la 4.ª). Cada {SCORE_BONUS_STEP} puntos obtienes un margen extra (+{SCORE_BONUS_WATER} agua y +{SCORE_BONUS_FERTILIZER} fertilizante).</span></p>
+            <button type="button" className="button" data-sfx="none" onClick={start}>Empezar ↗</button>
           </div>
         </div>}
 
@@ -174,35 +309,63 @@ export function FarmGame() {
             <p className="eyebrow">TEMPORADA {result.season + 1} · {WEATHER_LABEL[result.weather].toUpperCase()}</p>
             <div className="gs-score-big"><strong>+{fmt(result.food + result.bonus)}</strong><span>ALIMENTOS{result.multiplier > 1 ? ` · RACHA ×${result.multiplier} (+${fmt(result.bonus)})` : ''}</span></div>
             <div className="farm-adapt"><span>Adaptación al terreno: {Math.round(result.adaptation * 100)} %</span><i><b style={{ width: `${result.adaptation * 100}%` }} className={result.adaptation >= STREAK_ADAPTATION ? 'is-ok' : result.adaptation < 0.5 ? 'is-bad' : ''} /></i></div>
-            <p className="farm-soil-change">Suelo: <span className={`farm-soil-tag is-${result.soilBefore}`}>{SOIL_LABEL[result.soilBefore].toLowerCase()}</span> → <span className={`farm-soil-tag is-${result.soilAfter}`}>{SOIL_LABEL[result.soilAfter].toLowerCase()}</span> {result.trend === 'improves' ? '(mejoró)' : result.trend === 'worsens' ? '(empeoró)' : '(igual)'}.{result.landAfter < 100 && result.soilAfter === 'degraded' ? ` Tierra útil: ${result.landAfter} %.` : ''}</p>
+            <p className="farm-soil-change">Suelo: <span className={`farm-soil-tag is-${result.soilBefore}`}>{SOIL_LABEL[result.soilBefore].toLowerCase()}</span> → <span className={`farm-soil-tag is-${result.soilAfter}`}>{SOIL_LABEL[result.soilAfter].toLowerCase()}</span> {result.trend === 'improves' ? '(mejoró)' : result.trend === 'worsens' ? '(empeoró)' : '(igual)'}.{result.landAfter < 100 ? ` Tierra útil: ${result.landAfter} %.` : ''}</p>
+            {result.scoreBonus && (
+              <p className="farm-streak-hint">
+                Bono por puntaje (cada {SCORE_BONUS_STEP} pts):
+                {result.scoreBonus.water > 0 ? ` +${result.scoreBonus.water} agua` : ''}
+                {result.scoreBonus.fertilizer > 0 ? ` +${result.scoreBonus.fertilizer} fertilizante` : ''}.
+              </p>
+            )}
             <p className="farm-em-title">Emisiones del escenario: metano, óxido nitroso y CO₂ del suelo</p>
             <EmissionBars ch4={result.ch4} n2o={result.n2o} co2={result.co2} />
             <p className="gs-explain">{tipFor(result)}</p>
-            <button type="button" className="button" onClick={proceed}>{game.status === 'finished' ? 'Ver resultado final ↗' : 'Siguiente temporada ↗'}</button>
+            <button type="button" className="button" data-sfx="none" onClick={proceed}>{game.status === 'finished' ? 'Ver resultado final ↗' : 'Siguiente temporada ↗'}</button>
           </div>
         </div>}
 
-        {phase === 'final' && summary && <div className={`gs-overlay ${summary.balanced ? 'is-win' : 'is-loss'}`} role="dialog" aria-label="Resultado final">
-          <div className="gs-card">
-            <p className="eyebrow">RESULTADO FINAL{summary.balanced ? ' · MEDALLA «FINCA EQUILIBRADA»' : ''}</p>
-            <div className="gs-score-big"><strong>{summary.total}</strong><span>PUNTOS DE ALIMENTOS{summary.bonus ? ` · +${summary.bonus} POR RACHA` : ''}</span></div>
-            <ResultGrid items={[
-              { label: 'Emisiones por alimento', value: summary.perFood.toFixed(2), tone: summary.perFood <= 0.7 ? 'ok' : 'warn' },
-              { label: 'Suelo final', value: SOIL_LABEL[summary.soil], tone: summary.soil === 'degraded' ? 'warn' : 'ok' },
-              { label: 'Tierra útil', value: `${summary.land} %`, tone: summary.land >= 80 ? 'ok' : 'warn' },
-              { label: 'Mejor racha', value: `${summary.bestStreak} temporadas` },
-              { label: 'Agua restante', value: summary.water },
-              { label: 'Fertilizante', value: summary.fertilizer },
-            ]} />
-            <p>Emisiones del escenario: metano {fmt(summary.ch4)} · óxido nitroso {fmt(summary.n2o)} · CO₂ del suelo {fmt(summary.co2)}.</p>
-            <p className="gs-explain">{explain(summary)}</p>
-            <ol className="farm-history">{game.history.map(h => <li key={h.season}><b>{h.season + 1}</b><span className={`farm-soil-tag is-${h.soilBefore}`}>{SOIL_LABEL[h.soilBefore]}</span><span>{MGMT_LABEL[h.choice.mgmt]}, {FERT_LABEL[h.choice.fert].toLowerCase()}, hato {HERD_LABEL[h.choice.herd].toLowerCase()}</span><em>+{fmt(h.food + h.bonus)}</em></li>)}</ol>
-            <BestLine best={best} isNew={newBest} />
-            <button type="button" className="button" onClick={start}>Jugar otra vez ↗</button>
+        {phase === 'final' && summary && (() => {
+          const won = summary.passed
+          const checkRow = (ok: boolean, label: string) => <li className={ok ? 'is-ok' : 'is-fail'}><b>{ok ? '✓' : '✕'}</b><span>{label}</span></li>
+          return <div className={`gs-overlay ${won ? 'is-win' : 'is-loss'}`} role="dialog" aria-label="Resultado final">
+            <div className="gs-card">
+              {won && <span className="gs-win-stamp">★ RETO COMPLETADO</span>}
+              <p className="eyebrow">FIN DE PARTIDA ARCADE · {summary.seasons} TEMPORADAS{summary.balanced && won ? ' · MEDALLA «FINCA EQUILIBRADA»' : ''}</p>
+              <div className="gs-score-big"><strong>{summary.total}</strong><span>PUNTOS DE ALIMENTOS{summary.bonus ? ` · +${summary.bonus} POR RACHA` : ''}</span></div>
+              <ResultGrid items={[
+                { label: 'Emisiones por alimento', value: summary.perFood.toFixed(2), tone: summary.checks.emissions ? 'ok' : 'warn' },
+                { label: 'Suelo final', value: SOIL_LABEL[summary.soil], tone: summary.soil === 'degraded' ? 'warn' : 'ok' },
+                { label: 'Tierra útil', value: `${summary.land} %`, tone: summary.land >= MIN_WIN_LAND ? 'ok' : 'warn' },
+                { label: 'Temporadas adaptadas', value: `${summary.adaptedSeasons} / ${summary.seasons}`, tone: summary.checks.adapted ? 'ok' : 'warn' },
+                { label: 'Agua restante', value: summary.water },
+                { label: 'Fertilizante', value: summary.fertilizer },
+              ]} />
+              <ul className="farm-checklist" aria-label="Condiciones del reto">
+                {checkRow(summary.checks.food, `Alimentos suficientes: ${summary.total} / ${MIN_WIN_FOOD} mín.`)}
+                {checkRow(summary.checks.adapted, `Adaptación al terreno: ${summary.adaptedSeasons} / ${MIN_WIN_ADAPTED} temporadas (≥ 80 %)`)}
+                {checkRow(summary.checks.soil, `Suelo sano (${SOIL_LABEL[summary.soil].toLowerCase()}) y tierra útil: ${summary.land} % / ${MIN_WIN_LAND} % mín.`)}
+                {checkRow(summary.checks.emissions, `Bajas emisiones por alimento: ${summary.score > 0 ? summary.perFood.toFixed(2) : 'sin cosecha'} / ${MAX_WIN_PER_FOOD.toFixed(2)} máx.`)}
+                {checkRow(
+                  summary.checks.variety,
+                  summary.checks.variety
+                    ? `Estrategia variada: ${summary.distinctMgmt} manejos distintos`
+                    : summary.distinctMgmt < MIN_WIN_MGMT
+                      ? `Estrategia variada: solo usaste ${summary.distinctMgmt} tipo de manejo (mín. ${MIN_WIN_MGMT})`
+                      : `Estrategia variada: repetiste demasiado la misma combinación (${summary.maxRepeatedChoice} veces)`,
+                )}
+              </ul>
+              <p className="gs-explain">{explain(summary)}</p>
+              <ol className="farm-history">{game.history.map(h => <li key={h.season}><b>{h.season + 1}</b><span className={`farm-soil-tag is-${h.soilBefore}`}>{SOIL_LABEL[h.soilBefore]}</span><span>{MGMT_LABEL[h.choice.mgmt]}, {FERT_LABEL[h.choice.fert].toLowerCase()}, hato {HERD_LABEL[h.choice.herd].toLowerCase()}</span><em>+{fmt(h.food + h.bonus)}</em></li>)}</ol>
+              <BestLine best={best} isNew={newBest} />
+              <div className="gs-modal-actions">
+                {won && onNext && <button type="button" className="button" onClick={onNext}>{nextLabel ?? 'Ver título de Protector Ambiental →'}</button>}
+                <button type="button" className={won && onNext ? 'gs-retry-btn' : 'button'} data-sfx="none" onClick={start}>{won ? 'Jugar otra vez ↗' : 'Reintentar reto ↗'}</button>
+              </div>
+            </div>
           </div>
-        </div>}
+        })()}
       </div>
     </div>
-    <p className={`gs-help${message ? ' is-alert' : ''}`} role="status">{message || 'Elige una combinación y confírmala. Los valores son didácticos del escenario; no son mediciones reales de producción ni de emisiones.'}</p>
+    <p className={`gs-help${helpAlert ? ' is-alert' : ''}`} role="status">{helpAlert || 'Elige una combinación y confírmala. Los valores son didácticos del escenario; no son mediciones reales de producción ni de emisiones.'}</p>
   </div>
 }

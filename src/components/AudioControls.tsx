@@ -8,6 +8,7 @@ type ChannelProps = {
   volume: number
   onToggle: () => void
   onVolume: (value: number) => void
+  onCommit?: () => void
   disabled: boolean
 }
 
@@ -20,7 +21,7 @@ function SpeakerIcon({ muted, on }: { muted: boolean; on: boolean }) {
   </svg>
 }
 
-function Channel({ label, description, enabled, volume, onToggle, onVolume, disabled }: ChannelProps) {
+function Channel({ label, description, enabled, volume, onToggle, onVolume, onCommit, disabled }: ChannelProps) {
   return <div className={`audio-channel${enabled ? ' is-on' : ''}`}>
     <div className="audio-channel-head">
       <div><strong>{label}</strong><small>{description}</small></div>
@@ -29,7 +30,20 @@ function Channel({ label, description, enabled, volume, onToggle, onVolume, disa
       </button>
     </div>
     <label className="audio-range">Volumen <output>{volume}%</output>
-      <input type="range" min="0" max="100" step="1" value={volume} disabled={disabled} onChange={event => onVolume(Number(event.target.value))} aria-label={`Volumen de ${label.toLowerCase()}`} />
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={volume}
+        disabled={disabled}
+        onChange={event => onVolume(Number(event.target.value))}
+        onPointerUp={() => onCommit?.()}
+        onKeyUp={event => {
+          if (event.key.startsWith('Arrow') || event.key === 'Home' || event.key === 'End' || event.key.startsWith('Page')) onCommit?.()
+        }}
+        aria-label={`Volumen de ${label.toLowerCase()}`}
+      />
     </label>
   </div>
 }
@@ -41,9 +55,16 @@ export function AudioControls() {
     setMusicOn, setEffectsOn, setAmbientOn, playEffect,
   } = useAudio()
   const [open, setOpen] = useState(false)
+  const [testing, setTesting] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
+  const testTimer = useRef<number | null>(null)
   const status = !enabled ? 'Apagado' : muted ? 'Silenciado' : 'Activo'
+  const canTestEffect = enabled && !muted && effectsOn && effects > 0
+
+  useEffect(() => () => {
+    if (testTimer.current !== null) window.clearTimeout(testTimer.current)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -51,7 +72,7 @@ export function AudioControls() {
       if (!root.current?.contains(event.target as Node)) setOpen(false)
     }
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setOpen(false); trigger.current?.focus() }
+      if (event.key === 'Escape') { setOpen(false); playEffect('click', { force: true }); trigger.current?.focus() }
     }
     document.addEventListener('pointerdown', close)
     document.addEventListener('keydown', escape)
@@ -59,10 +80,21 @@ export function AudioControls() {
       document.removeEventListener('pointerdown', close)
       document.removeEventListener('keydown', escape)
     }
-  }, [open])
+  }, [open, playEffect])
+
+  function handleTestEffect() {
+    if (!canTestEffect) return
+    playEffect('adventure', { force: true })
+    setTesting(true)
+    if (testTimer.current !== null) window.clearTimeout(testTimer.current)
+    testTimer.current = window.setTimeout(() => {
+      setTesting(false)
+      testTimer.current = null
+    }, 550)
+  }
 
   return <div className="audio-dock" ref={root}>
-    <button ref={trigger} type="button" className={`audio-trigger${enabled ? ' is-on' : ''}${muted ? ' is-muted' : ''}`} aria-expanded={open} aria-controls="audio-panel" aria-label={`Sonido: ${status}`} onClick={() => { setOpen(value => !value); playEffect('open') }}>
+    <button ref={trigger} type="button" className={`audio-trigger${enabled ? ' is-on' : ''}${muted ? ' is-muted' : ''}`} aria-expanded={open} aria-controls="audio-panel" aria-label={`Sonido: ${status}`} onClick={() => { setOpen(value => !value); playEffect('open', { force: true }) }}>
       <SpeakerIcon muted={muted} on={enabled && !muted} />
       <span className="audio-label">Sonido</span>
       <small>{status}</small>
@@ -73,16 +105,24 @@ export function AudioControls() {
         <button type="button" className={`audio-power${enabled ? ' is-on' : ''}`} aria-pressed={enabled} onClick={() => setEnabled(!enabled)}>
           {enabled ? 'Desactivar audio' : 'Activar audio'}
         </button>
-        <button type="button" className="audio-mute" aria-pressed={muted} disabled={!enabled} onClick={() => setMuted(!muted)}>
+        <button type="button" className="audio-mute" aria-pressed={muted} disabled={!enabled} onClick={() => { const next = !muted; setMuted(next); if (!next) playEffect('toggle', { force: true }) }}>
           {muted ? 'Quitar silencio' : 'Silenciar todo'}
         </button>
       </div>
       <div className="audio-channels">
-        <Channel label="Música" description="Pista de cada sección · pista propia en los minijuegos" enabled={musicOn} volume={music} onToggle={() => setMusicOn(!musicOn)} onVolume={setMusic} disabled={!enabled} />
-        <Channel label="Efectos" description="Sonidos distintos para cada acción" enabled={effectsOn} volume={effects} onToggle={() => setEffectsOn(!effectsOn)} onVolume={setEffects} disabled={!enabled} />
-        <Channel label="Ambiente" description="Grabación propia de cada mundo" enabled={ambientOn} volume={ambient} onToggle={() => setAmbientOn(!ambientOn)} onVolume={setAmbient} disabled={!enabled} />
+        <Channel label="Música" description="Pista de cada sección · pista propia en los minijuegos" enabled={musicOn} volume={music} onToggle={() => { setMusicOn(!musicOn); playEffect('toggle', { force: true }) }} onVolume={setMusic} onCommit={() => playEffect('click', { force: true })} disabled={!enabled} />
+        <Channel label="Efectos" description="Sonidos distintos para cada acción" enabled={effectsOn} volume={effects} onToggle={() => { const next = !effectsOn; setEffectsOn(next); if (next) playEffect('toggle', { force: true }) }} onVolume={setEffects} onCommit={() => playEffect('click', { force: true })} disabled={!enabled} />
+        <Channel label="Ambiente" description="Grabación propia de cada mundo" enabled={ambientOn} volume={ambient} onToggle={() => { setAmbientOn(!ambientOn); playEffect('toggle', { force: true }) }} onVolume={setAmbient} onCommit={() => playEffect('click', { force: true })} disabled={!enabled} />
       </div>
-      <button type="button" className="audio-test" disabled={!enabled || muted || !effectsOn} onClick={() => playEffect('adventure')}>Probar un efecto</button>
+      <button
+        type="button"
+        className={`audio-test${testing ? ' is-testing' : ''}`}
+        disabled={!canTestEffect}
+        title={canTestEffect ? 'Reproducir efecto de prueba' : !enabled ? 'Activa el audio primero' : muted ? 'Quita el silencio para probar' : 'Activa y sube el volumen de Efectos para probar'}
+        onClick={handleTestEffect}
+      >
+        {testing ? 'Reproduciendo efecto…' : 'Probar un efecto'}
+      </button>
       <p className="audio-note">Cada sección reproduce su propia pista y cada mundo de los minijuegos, la suya; mientras juegas, la pista de la sección se detiene. Los sonidos están incluidos en la página y solo se reproducen al activar el audio.</p>
     </div>}
   </div>

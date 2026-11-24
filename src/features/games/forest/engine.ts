@@ -1,12 +1,13 @@
 /**
- * Guardabosques · motor del minijuego de Uso del suelo y bosques.
+ * Guardabosques · motor arcade del minijuego de Uso del suelo y bosques.
  *
- * Lógica pura y determinista. Todos los valores son didácticos: no son
- * mediciones de carbono, emisiones ni deforestación reales.
+ * Lógica pura y determinista. En modo arcade (targetCycles = 0) las presiones
+ * climáticas y productivas escalan progresivamente: al alcanzar la meta del reto se
+ * desbloquea el progreso y puedes seguir defendiendo el territorio para tu récord.
  */
 export type ParcelState = 'forest' | 'young' | 'sapling' | 'crop' | 'degraded'
 export type Tool = 'protect' | 'cultivate' | 'restore'
-export type Status = 'playing' | 'hunger' | 'collapse'
+export type Status = 'playing' | 'hunger' | 'collapse' | 'survived'
 
 export interface Parcel { state: ParcelState; age: number; protectedUntil: number; flashUntil: number }
 export interface GameEvent { kind: 'logging' | 'fire'; index: number; cycle: number }
@@ -16,21 +17,30 @@ export const CELLS = SIZE * SIZE
 
 export const CONFIG = {
   cycleSeconds: 2,
-  growCycles: 4,          // ciclos por etapa de restauración (brote → joven → maduro)
+  goalCycles: 25,
+  growCycles: 4,
   protectCycles: 10,
   protectCap: 8,
-  restoreActions: 10,
+  restoreActions: 8,
+  restoreMax: 10,
+  restoreRechargeEvery: 6,
   loggingEvery: 3,
   fireStart: 5,
-  fireEvery: 7,
+  fireEvery: 6,
   foodPerCrop: 10,
   demandStart: 80,
-  demandGrowth: 2,
-  stableFood: 85,         // % de cobertura de alimentos para sumar puntaje
-  stableCarbon: 38,       // % de carbono almacenado para sumar puntaje
-  endFood: 50,            // por debajo termina por hambre
-  endCarbon: 20,          // por debajo termina por colapso del bosque
+  demandGrowth: 2.4,
+  stableFood: 85,
+  stableCarbon: 38,
+  endFood: 50,
+  endCarbon: 20,
 } as const
+
+export const CHALLENGE_TARGET_SCORE = 360
+export const MIN_WIN_STABLE_SECONDS = 30
+export const MIN_WIN_ACTIONS = 6
+export const SCORE_BONUS_STEP = 250
+export const SCORE_BONUS_RESTORE = 1
 
 export const CARBON: Record<ParcelState, number> = { forest: 10, young: 5, sapling: 2, crop: 1, degraded: 0 }
 export const MAX_CARBON = CELLS * CARBON.forest
@@ -42,6 +52,7 @@ export const STATE_LABEL: Record<ParcelState, string> = {
 export interface GameState {
   t: number
   cycle: number
+  targetCycles: number
   cycleTimer: number
   rng: number
   status: Status
@@ -55,11 +66,13 @@ export interface GameState {
   logged: number
   startCarbon: number
   events: GameEvent[]
-  /** Ciclos seguidos con alimentos y carbono estables. */
+  actions: number
   stableCycles: number
   multiplier: number
   bestMultiplier: number
   bonus: number
+  challengeCleared: boolean
+  scoreMilestonesClaimed: number
 }
 
 function nextRandom(state: GameState): number {
@@ -72,13 +85,15 @@ function nextRandom(state: GameState): number {
 
 export function carbonOf(parcels: Parcel[]): number { return parcels.reduce((sum, p) => sum + CARBON[p.state], 0) }
 
-export function createGame(seed = 1982): GameState {
+export function createGame(seed = 1982, targetCycles = 0): GameState {
   const state: GameState = {
-    t: 0, cycle: 0, cycleTimer: 0, rng: seed >>> 0, status: 'playing',
+    t: 0, cycle: 0, targetCycles, cycleTimer: 0, rng: seed >>> 0, status: 'playing',
     parcels: Array.from({ length: CELLS }, () => ({ state: 'forest' as ParcelState, age: 0, protectedUntil: 0, flashUntil: 0 })),
     demand: CONFIG.demandStart, restoreLeft: CONFIG.restoreActions, stableTime: 0,
     converted: 0, restored: 0, fires: 0, logged: 0, startCarbon: 0, events: [],
-    stableCycles: 0, multiplier: 1, bestMultiplier: 1, bonus: 0,
+    actions: 0, stableCycles: 0, multiplier: 1, bestMultiplier: 1, bonus: 0,
+    challengeCleared: false,
+    scoreMilestonesClaimed: 0,
   }
   const place = (kind: ParcelState, count: number) => {
     let placed = 0
@@ -129,6 +144,7 @@ export function protect(state: GameState, index: number): ActionResult {
   if (isProtected(state, p)) return { ok: false, reason: 'Esa parcela ya está protegida.' }
   if (protectedCount(state) >= CONFIG.protectCap) return { ok: false, reason: `Solo puedes proteger ${CONFIG.protectCap} parcelas a la vez.` }
   p.protectedUntil = state.cycle + CONFIG.protectCycles
+  state.actions++
   return { ok: true }
 }
 
@@ -138,6 +154,7 @@ export function cultivate(state: GameState, index: number): ActionResult {
   if (p.state === 'crop') return { ok: false, reason: 'Esa parcela ya es un cultivo.' }
   if (FOREST_LIKE.includes(p.state)) state.converted++
   p.state = 'crop'; p.age = 0; p.protectedUntil = 0
+  state.actions++
   checkEnd(state)
   return { ok: true }
 }
@@ -146,9 +163,10 @@ export function restore(state: GameState, index: number): ActionResult {
   const p = state.parcels[index]
   if (state.status !== 'playing') return { ok: false, reason: 'La partida terminó.' }
   if (p.state !== 'crop' && p.state !== 'degraded') return { ok: false, reason: 'Solo se restauran cultivos o parcelas degradadas.' }
-  if (state.restoreLeft <= 0) return { ok: false, reason: 'No te quedan acciones de restauración.' }
+  if (state.restoreLeft <= 0) return { ok: false, reason: `No te quedan acciones de restauración por ahora (ganas +1 cada ${CONFIG.restoreRechargeEvery} ciclos estables o cada ${SCORE_BONUS_STEP} puntos).` }
   state.restoreLeft--; state.restored++
   p.state = 'sapling'; p.age = 0
+  state.actions++
   checkEnd(state)
   return { ok: true }
 }
@@ -176,9 +194,14 @@ function pushEvent(state: GameState, event: GameEvent) {
 export const multiplierFor = (stableCycles: number) => Math.min(3, 1 + Math.floor(stableCycles / 5))
 
 export function advanceCycle(state: GameState) {
-  // La racha se evalúa con el estado del ciclo que termina.
-  if (indicators(state).stable) state.stableCycles++
-  else state.stableCycles = 0
+  if (indicators(state).stable) {
+    state.stableCycles++
+    if (state.stableCycles % CONFIG.restoreRechargeEvery === 0 && state.restoreLeft < CONFIG.restoreMax) {
+      state.restoreLeft++
+    }
+  } else {
+    state.stableCycles = 0
+  }
   state.multiplier = multiplierFor(state.stableCycles)
   state.bestMultiplier = Math.max(state.bestMultiplier, state.multiplier)
   state.cycle++
@@ -189,7 +212,8 @@ export function advanceCycle(state: GameState) {
       if (p.age >= CONFIG.growCycles) { p.state = p.state === 'sapling' ? 'young' : 'forest'; p.age = 0 }
     }
   }
-  if (state.cycle % CONFIG.loggingEvery === 0) {
+  const loggingFreq = state.cycle >= 12 ? 2 : CONFIG.loggingEvery
+  if (state.cycle % loggingFreq === 0) {
     const candidates = state.parcels.map((p, i) => ({ p, i })).filter(({ p }) => p.state === 'forest' && !isProtected(state, p))
     if (candidates.length) {
       const { p, i } = candidates[Math.floor(nextRandom(state) * candidates.length)]
@@ -197,7 +221,8 @@ export function advanceCycle(state: GameState) {
       pushEvent(state, { kind: 'logging', index: i, cycle: state.cycle })
     }
   }
-  if (state.cycle >= CONFIG.fireStart && (state.cycle - CONFIG.fireStart) % CONFIG.fireEvery === 0) {
+  const fireFreq = state.cycle >= 14 ? 4 : CONFIG.fireEvery
+  if (state.cycle >= CONFIG.fireStart && (state.cycle - CONFIG.fireStart) % fireFreq === 0) {
     const weighted = state.parcels.map((p, i) => ({ p, i }))
       .filter(({ p }) => FOREST_LIKE.includes(p.state) && !isProtected(state, p))
       .map(({ p, i }) => ({ p, i, w: 1 + 2 * neighbours(i).filter(n => state.parcels[n].state === 'crop' || state.parcels[n].state === 'degraded').length }))
@@ -210,14 +235,35 @@ export function advanceCycle(state: GameState) {
     }
   }
   checkEnd(state)
+  if (state.status === 'playing' && state.targetCycles > 0 && state.cycle >= state.targetCycles) {
+    state.status = 'survived'
+  }
+}
+
+export function hasReachedChallenge(state: GameState): boolean {
+  return totalScore(state) >= CHALLENGE_TARGET_SCORE && state.stableTime >= MIN_WIN_STABLE_SECONDS && state.actions >= MIN_WIN_ACTIONS
 }
 
 export function step(state: GameState, dt: number): GameState {
   if (state.status !== 'playing') return state
   dt = Math.min(Math.max(dt, 0), 0.1)
   state.t += dt
-  if (indicators(state).stable) { state.stableTime += dt; state.bonus += dt * 10 * (state.multiplier - 1) }
-  else if (state.multiplier > 1) { state.multiplier = 1; state.stableCycles = 0 }
+  if (indicators(state).stable) {
+    state.stableTime += dt
+    state.bonus += dt * 10 * (state.multiplier - 1)
+  } else if (state.multiplier > 1) {
+    state.multiplier = 1
+    state.stableCycles = 0
+  }
+  const milestones = Math.floor(totalScore(state) / SCORE_BONUS_STEP)
+  if (milestones > state.scoreMilestonesClaimed) {
+    const gained = (milestones - state.scoreMilestonesClaimed) * SCORE_BONUS_RESTORE
+    state.restoreLeft = Math.min(CONFIG.restoreMax, state.restoreLeft + gained)
+    state.scoreMilestonesClaimed = milestones
+  }
+  if (!state.challengeCleared && hasReachedChallenge(state)) {
+    state.challengeCleared = true
+  }
   state.cycleTimer += dt
   while (state.cycleTimer >= CONFIG.cycleSeconds && state.status === 'playing') {
     state.cycleTimer -= CONFIG.cycleSeconds
@@ -227,7 +273,6 @@ export function step(state: GameState, dt: number): GameState {
 }
 
 export const score = (state: GameState) => Math.round(state.stableTime * 10)
-/** Tiempo estable + bono por racha de ciclos estables. */
 export const totalScore = (state: GameState) => Math.round(state.stableTime * 10 + state.bonus)
 
 export interface Summary {
@@ -236,6 +281,9 @@ export interface Summary {
   bonus: number
   bestMultiplier: number
   seconds: number
+  cycles: number
+  stableSeconds: number
+  actions: number
   forests: number
   converted: number
   netCarbon: number
@@ -243,12 +291,24 @@ export interface Summary {
   logged: number
   restored: number
   cause: Status
+  checks: { score: boolean; stable: boolean; active: boolean }
+  passed: boolean
 }
 
 export function summarize(state: GameState): Summary {
   const ind = indicators(state)
+  const total = totalScore(state)
+  const checks = {
+    score: state.challengeCleared || total >= CHALLENGE_TARGET_SCORE,
+    stable: state.stableTime >= MIN_WIN_STABLE_SECONDS,
+    active: state.actions >= MIN_WIN_ACTIONS,
+  }
+  const finitePassed = state.status === 'survived' && checks.stable && checks.active
   return {
-    score: score(state), total: totalScore(state), bonus: Math.round(state.bonus), bestMultiplier: state.bestMultiplier, seconds: state.t, forests: ind.forests, converted: state.converted,
+    score: score(state), total, bonus: Math.round(state.bonus), bestMultiplier: state.bestMultiplier,
+    seconds: state.t, cycles: state.cycle,
+    stableSeconds: Math.round(state.stableTime), actions: state.actions, forests: ind.forests, converted: state.converted,
     netCarbon: ind.carbon - state.startCarbon, fires: state.fires, logged: state.logged, restored: state.restored, cause: state.status,
+    checks, passed: state.challengeCleared || hasReachedChallenge(state) || finitePassed,
   }
 }

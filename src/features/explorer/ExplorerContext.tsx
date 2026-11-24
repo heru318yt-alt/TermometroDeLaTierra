@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useClimateData } from '../climate/useClimateData'
 import { getAnnualAnomaly, getMonthlyAnomaly } from '../climate/math'
@@ -24,7 +24,7 @@ function useExplorerState(initialMode: ViewMode) {
   const [range, setRange] = useState({ start: `${FIRST_YEAR}-01`, end: data.lastDate })
   const date = fromIndex(selected)
   const atStart = mode === 'annual' ? date.year === FIRST_YEAR : selected === minIndex
-  const atEnd = mode === 'annual' ? date.year === latestAnnualYear : selected === maxIndex
+  const atEnd = mode === 'annual' ? date.year >= latestAnnualYear : selected >= maxIndex
   const anomaly = mode === 'monthly' ? getMonthlyAnomaly(data.years, date) : getAnnualAnomaly(data.years, date.year)
 
   useEffect(() => {
@@ -47,7 +47,8 @@ function useExplorerState(initialMode: ViewMode) {
     const interval = window.setInterval(() => {
       setSelected(value => {
         const stepSize = mode === 'monthly' ? 1 : 12
-        const next = Math.min(maxIndex, value + stepSize)
+        const limit = mode === 'annual' ? Math.min(maxIndex, latestAnnualYear * 12 + (value % 12)) : maxIndex
+        const next = Math.min(limit, value + stepSize)
         if (next !== value) {
           playSfx('click')
           const nextYear = Math.floor(next / 12)
@@ -59,29 +60,29 @@ function useExplorerState(initialMode: ViewMode) {
       })
     }, speed)
     return () => window.clearInterval(interval)
-  }, [playing, reducedMotion, atEnd, maxIndex, mode, speed])
+  }, [playing, reducedMotion, atEnd, latestAnnualYear, maxIndex, mode, speed])
   useEffect(() => { if (atEnd) setPlaying(false) }, [atEnd])
 
-  const apply = (next: MonthDate, sound: SoundKind = 'date') => {
+  const apply = useCallback((next: MonthDate, sound: SoundKind = 'date') => {
     setPlaying(false)
     setSelected(Math.max(minIndex, Math.min(maxIndex, toIndex(next))))
     playSfx(sound)
-  }
-  const select = (next: MonthDate) => apply(next, 'date')
-  const selectYear = (year: number) => {
+  }, [maxIndex, minIndex])
+  const select = useCallback((next: MonthDate) => apply(next, 'date'), [apply])
+  const selectYear = useCallback((year: number) => {
     const clamped = Math.max(FIRST_YEAR, Math.min(last.year, Math.round(year)))
     apply({ year: clamped, month: Math.min(date.month, clamped === last.year ? last.month : 12) }, 'date')
-  }
-  const setMode = (next: ViewMode) => { setPlaying(false); setModeState(next); playSfx('toggle') }
-  const step = (direction: number) => apply(fromIndex(selected + direction * (mode === 'monthly' ? 1 : 12)), 'timeline')
-  const reset = () => apply(fromIndex(minIndex), 'timeline')
-  const togglePlay = () => {
+  }, [apply, date.month, last.month, last.year])
+  const setMode = useCallback((next: ViewMode) => { setPlaying(false); setModeState(next); playSfx('toggle') }, [])
+  const step = useCallback((direction: number) => apply(fromIndex(selected + direction * (mode === 'monthly' ? 1 : 12)), 'timeline'), [apply, mode, selected])
+  const reset = useCallback(() => apply(fromIndex(minIndex), 'timeline'), [apply, minIndex])
+  const togglePlay = useCallback(() => {
     if (reducedMotion) return
     playSfx('timeline')
     if (atEnd) setSelected(minIndex)
     lastPeriod.current = atEnd ? Math.floor(minIndex / 12) : Math.floor(selected / 12)
     setPlaying(value => !value)
-  }
+  }, [atEnd, minIndex, reducedMotion, selected])
   const series = useMemo(() => {
     if (mode === 'annual') return data.years.filter(row => row.year >= FIRST_YEAR && row.year <= last.year)
       .map(row => ({ date: { year: row.year, month: 1 }, anomaly: getAnnualAnomaly(data.years, row.year) }))
@@ -90,9 +91,15 @@ function useExplorerState(initialMode: ViewMode) {
       return { date: pointDate, anomaly: getMonthlyAnomaly(data.years, pointDate) }
     })
   }, [data, mode, minIndex, maxIndex, last.year])
-  return { data, summary, mode, setMode, date, selected, select, selectYear, minIndex, maxIndex, last,
-    anomaly, label: formatDate(date, mode), playing, speed, setSpeed, reducedMotion,
-    atStart, atEnd, step, reset, togglePlay, range, setRange, series }
+  const label = formatDate(date, mode)
+  return useMemo(() => ({
+    data, summary, mode, setMode, date, selected, select, selectYear, minIndex, maxIndex, last,
+    anomaly, label, playing, speed, setSpeed, reducedMotion,
+    atStart, atEnd, step, reset, togglePlay, range, setRange, series,
+  }), [
+    data, summary, mode, setMode, date, selected, select, selectYear, minIndex, maxIndex, last,
+    anomaly, label, playing, speed, reducedMotion, atStart, atEnd, step, reset, togglePlay, range, series,
+  ])
 }
 
 type ProviderProps = { children: ReactNode; initialMode?: ViewMode }

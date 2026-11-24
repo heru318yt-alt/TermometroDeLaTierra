@@ -1,9 +1,9 @@
 /**
- * Puente de materiales · motor del minijuego de Industria y materiales.
+ * Puente de materiales · motor arcade del minijuego de Industria y materiales.
  *
  * Física deliberadamente simple y predecible: cada material resiste un tramo
- * sin apoyo de cierta longitud. Todos los valores son didácticos y no
- * representan mediciones de emisiones.
+ * sin apoyo de cierta longitud. En modo arcade los tramos siguen indefinidamente
+ * mientras el inventario circular te alcance para cruzar nuevas brechas.
  */
 export type Material = 'steel' | 'concrete'
 export type Stock = 'steel' | 'cement'
@@ -16,7 +16,9 @@ export interface LevelDef { id: string; name: string; gap: number; leftH: number
 
 export const MAX_ROW = 6
 export const METERS_PER_COLUMN = 8
-export const START_INVENTORY: Inventory = { steel: 46, cement: 20 }
+export const START_INVENTORY: Inventory = { steel: 40, cement: 18 }
+export const SCORE_BONUS_STEP = 180
+export const SCORE_BONUS_REFILL: Inventory = { steel: 4, cement: 3 }
 
 export const MATERIALS: Record<Material, { label: string; stock: Stock; perCell: number; span: number; emission: number; note: string }> = {
   steel: { label: 'Acero', stock: 'steel', perCell: 2, span: 4, emission: 1.8, note: 'Resiste tramos largos, pero su producción es intensiva en energía.' },
@@ -29,8 +31,35 @@ export const LEVELS: LevelDef[] = [
   { id: 'quebrada', name: 'Quebrada corta', gap: 4, leftH: 2, rightH: 2, hint: 'Una brecha corta y plana: aprende cómo se apoyan las piezas.' },
   { id: 'rio', name: 'Río ancho', gap: 6, leftH: 2, rightH: 2, hint: 'Más distancia: un apoyo bien puesto ahorra material.' },
   { id: 'mirador', name: 'Mirador alto', gap: 7, leftH: 2, rightH: 4, hint: 'El destino está más arriba. Los pilares altos cuestan más cemento.' },
-  { id: 'canon', name: 'Cañón largo', gap: 9, leftH: 3, rightH: 2, hint: 'La brecha más larga con lo que te queda. Combina materiales.' },
+  { id: 'canon', name: 'Cañón largo', gap: 9, leftH: 3, rightH: 2, hint: 'Brecha amplia: combina acero y concreto con pilares estratégicos.' },
 ]
+
+const ENDLESS_NAMES = ['Angostura', 'Barranco hondo', 'Estrecho sur', 'Acantilado vivo', 'Desfiladero', 'Viaducto alto'] as const
+const ENDLESS_GAPS = [7, 8, 9, 8, 10, 9] as const
+const ENDLESS_CLIFFS: readonly [number, number][] = [
+  [2, 4],
+  [4, 2],
+  [2, 3],
+  [3, 5],
+  [4, 3],
+  [3, 2],
+]
+
+/** Devuelve la definición determinista de cualquier puente (0–3 iniciales, 4+ en modo arcade). */
+export function levelAt(index: number): LevelDef {
+  if (index < LEVELS.length) return LEVELS[index]
+  const offset = index - LEVELS.length
+  const [leftH, rightH] = ENDLESS_CLIFFS[offset % ENDLESS_CLIFFS.length]
+  const gap = ENDLESS_GAPS[offset % ENDLESS_GAPS.length]
+  return {
+    id: `arcade-${index + 1}`,
+    name: `${ENDLESS_NAMES[offset % ENDLESS_NAMES.length]} #${index + 1}`,
+    gap,
+    leftH,
+    rightH,
+    hint: 'Tramo arcade: cada cruce eficiente recupera material reciclado para seguir batiendo tu récord.',
+  }
+}
 
 /** Un pilar ocupa las filas por debajo del tablero: cuesta (fila − 1) de cemento. */
 export const pillarCost = (row: number) => Math.max(0, row - 1)
@@ -82,7 +111,6 @@ export function evaluate(level: LevelDef, plan: Plan): Evaluation {
   const supported = (c: number) => c === 0 || c === n + 1 || plan.pillar[c - 1]
   const has = (c: number) => c === 0 || c === n + 1 || plan.deck[c - 1] !== null
 
-  // Tramos sin apoyo, delimitados por apoyos (riscos o pilares) en ambos extremos.
   const runs: RunInfo[] = []
   let c = 1
   while (c <= n) {
@@ -112,7 +140,17 @@ export function evaluate(level: LevelDef, plan: Plan): Evaluation {
   return done('ok', n + 1, null)
 }
 
-export interface LevelResult { levelId: string; outcome: Outcome; meters: number; cost: Cost; stars: number; bonus: number }
+export interface LevelResult {
+  levelId: string
+  levelName: string
+  outcome: Outcome
+  meters: number
+  cost: Cost
+  refill: Inventory
+  scoreBonus: Inventory
+  stars: number
+  bonus: number
+}
 
 export interface Run {
   levelIndex: number
@@ -124,10 +162,11 @@ export interface Run {
   /** Puentes completados seguidos. */
   streak: number
   bonus: number
+  scoreMilestonesClaimed: number
 }
 
 export function startRun(): Run {
-  return { levelIndex: 0, inventory: { ...START_INVENTORY }, distance: 0, emissions: 0, used: { steel: 0, cement: 0 }, results: [], streak: 0, bonus: 0 }
+  return { levelIndex: 0, inventory: { ...START_INVENTORY }, distance: 0, emissions: 0, used: { steel: 0, cement: 0 }, results: [], streak: 0, bonus: 0, scoreMilestonesClaimed: 0 }
 }
 
 /** ¿Queda material para colocar al menos una pieza de tablero? */
@@ -135,8 +174,13 @@ export function canBuildAnything(inv: Inventory): boolean {
   return inv.cement >= 1 || inv.steel >= 2
 }
 
+/** ¿Alcanza el inventario para cubrir el ancho completo de esta brecha? */
+export function canSpanLevel(inv: Inventory, level: LevelDef): boolean {
+  return Math.floor(inv.steel / 2) + inv.cement >= level.gap
+}
+
 export function canContinue(run: Run): boolean {
-  return run.levelIndex < LEVELS.length && canBuildAnything(run.inventory)
+  return canBuildAnything(run.inventory) && canSpanLevel(run.inventory, levelAt(run.levelIndex))
 }
 
 /** Unidades de material por columna de brecha: menos es más eficiente. */
@@ -151,34 +195,73 @@ export function starsFor(level: LevelDef, outcome: Outcome, cost: Inventory): nu
   return u <= 1.5 ? 3 : u <= 2.2 ? 2 : 1
 }
 
+/** Recuperación circular de material tras cruzar con éxito, según estrellas de eficiencia. */
+export function refillFor(level: LevelDef, stars: number): Inventory {
+  if (stars <= 0) return { steel: 0, cement: 0 }
+  const rate = stars === 3 ? 1.15 : stars === 2 ? 0.85 : 0.5
+  return {
+    steel: Math.max(2, Math.round(level.gap * rate)),
+    cement: Math.max(2, Math.round(level.gap * rate)),
+  }
+}
+
 /** Bono por racha: desde el 2.º puente seguido suma la mitad de sus metros por cada nivel de racha (máx. ×3). */
 export const streakBonus = (meters: number, streak: number) => Math.round(meters * 0.5 * (Math.min(streak, 4) - 1))
 
-/** Gasta el material del plan (no se recupera), prueba el puente y avanza al siguiente nivel. */
+/** Gasta el material del plan, repone material circular si cruza y avanza al siguiente tramo. */
 export function commitLevel(run: Run, plan: Plan): { run: Run; result: LevelResult; evaluation: Evaluation } {
-  const level = LEVELS[run.levelIndex]
+  const level = levelAt(run.levelIndex)
   const cost = planCost(plan)
   if (!fits(run.inventory, cost)) throw new Error('El plan usa más material del disponible')
   const evaluation = evaluate(level, plan)
   const streak = evaluation.outcome === 'ok' ? run.streak + 1 : 0
   const bonus = evaluation.outcome === 'ok' ? streakBonus(evaluation.meters, streak) : 0
-  const result: LevelResult = { levelId: level.id, outcome: evaluation.outcome, meters: evaluation.meters, cost, stars: starsFor(level, evaluation.outcome, cost), bonus }
+  const stars = starsFor(level, evaluation.outcome, cost)
+  const refill = refillFor(level, stars)
+  const nextDistance = run.distance + evaluation.meters
+  const nextBonus = run.bonus + bonus
+  const nextMilestones = Math.floor((nextDistance + nextBonus) / SCORE_BONUS_STEP)
+  const earnedMilestones = Math.max(0, nextMilestones - run.scoreMilestonesClaimed)
+  const scoreBonus: Inventory = {
+    steel: earnedMilestones * SCORE_BONUS_REFILL.steel,
+    cement: earnedMilestones * SCORE_BONUS_REFILL.cement,
+  }
+  const result: LevelResult = {
+    levelId: level.id,
+    levelName: level.name,
+    outcome: evaluation.outcome,
+    meters: evaluation.meters,
+    cost,
+    refill,
+    scoreBonus,
+    stars,
+    bonus,
+  }
   return {
     evaluation, result,
     run: {
       levelIndex: run.levelIndex + 1,
-      inventory: { steel: run.inventory.steel - cost.steel, cement: run.inventory.cement - cost.cement },
-      distance: run.distance + evaluation.meters,
+      inventory: {
+        steel: run.inventory.steel - cost.steel + refill.steel + scoreBonus.steel,
+        cement: run.inventory.cement - cost.cement + refill.cement + scoreBonus.cement,
+      },
+      distance: nextDistance,
       emissions: run.emissions + cost.emissions,
       used: { steel: run.used.steel + cost.steel, cement: run.used.cement + cost.cement },
       results: [...run.results, result],
-      streak, bonus: run.bonus + bonus,
+      streak,
+      bonus: nextBonus,
+      scoreMilestonesClaimed: run.scoreMilestonesClaimed + earnedMilestones,
     },
   }
 }
 
+export const MIN_BRIDGES_PASSED = 3
+
 export const totalScore = (run: Run) => run.distance + run.bonus
 export const totalStars = (run: Run) => run.results.reduce((sum, r) => sum + r.stars, 0)
+export const completedBridges = (run: Run) => run.results.filter(r => r.outcome === 'ok').length
+export const passedRun = (run: Run) => completedBridges(run) >= MIN_BRIDGES_PASSED
 
 export function totalUsed(run: Run): number { return run.used.steel + run.used.cement }
 export function metersPerUnit(run: Run): number { return totalUsed(run) ? run.distance / totalUsed(run) : 0 }

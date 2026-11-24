@@ -2,7 +2,13 @@
  * Carga entre ciudades · dibujo del escenario (coordenadas lógicas 640×360).
  */
 import { FxLayer, hash, roundRect, vignette } from '../shared/canvas'
-import { MODES, ORIGIN, ROUND_SECONDS, ROUTES, WORLD, ZONE_HALF, effectiveAngle, landingX, routeCenter, trajectory, type GameState, type Mode } from './engine'
+import {
+  MODES, ORIGIN, ROUND_SECONDS, ROUTES, WORLD, ZONE_HALF,
+  batchEmissionsTonnes, batchSpreadHalf, effectiveAngle, flightTime,
+  hillBlocks, landingX, maxRange, reaches, routeCenter, trajectory,
+  type GameState, type Mode,
+} from './engine'
+import { MODE_CONTROL } from './slingshot'
 
 export const W = 640
 export const H = 360
@@ -70,6 +76,35 @@ function crate(ctx: CanvasRenderingContext2D, x: number, y: number, mode: Mode, 
   ctx.restore()
 }
 
+function pill(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  text: string,
+  bg = '#0f2320eb',
+  border = '#ffffff44',
+  fg = '#fbf7ec',
+) {
+  ctx.save()
+  ctx.font = '700 9.5px ui-monospace, Consolas, monospace'
+  const padX = 8
+  const h = 18
+  const w = ctx.measureText(text).width + padX * 2
+  const x = Math.max(6, Math.min(W - w - 6, cx - w / 2))
+  const y = Math.max(6, Math.min(H - h - 6, cy - h / 2))
+  ctx.fillStyle = bg
+  roundRect(ctx, x, y, w, h, 5)
+  ctx.fill()
+  ctx.strokeStyle = border
+  ctx.lineWidth = 1.2
+  ctx.stroke()
+  ctx.fillStyle = fg
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, x + w / 2, y + h / 2 + 0.5)
+  ctx.restore()
+}
+
 function city(ctx: CanvasRenderingContext2D, x0: number, palette: string[], seed: number, count = 5) {
   for (let i = 0; i < count; i++) {
     const w = 13 + Math.round(hash(seed + i) * 9), h = 20 + Math.round(hash(seed + i * 2.7) * 30)
@@ -81,11 +116,34 @@ function city(ctx: CanvasRenderingContext2D, x0: number, palette: string[], seed
   }
 }
 
-export interface View { t: number; aiming: boolean; pull: { x: number; y: number } | null; reduceMotion: boolean }
+export interface DragView {
+  active: boolean
+  armed: boolean
+  hovered: boolean
+  canFire: boolean
+  atMax: boolean
+  offAxisWarning: boolean
+  tension: number
+  pointer: { x: number; y: number } | null
+  pull: { x: number; y: number } | null
+  showIntroCue: boolean
+}
+
+export interface View {
+  t: number
+  drag: DragView
+  reduceMotion: boolean
+}
 
 export function drawScene(ctx: CanvasRenderingContext2D, s: GameState, mode: Mode, angle: number, power: number, preview: boolean, fx: FxLayer, v: View) {
   const r = ROUTES[s.routeIndex], center = routeCenter(r)
   const t = v.reduceMotion ? 0 : v.t
+  const effAngle = effectiveAngle(mode, angle)
+  const a = (effAngle * Math.PI) / 180
+  const def = MODES[mode]
+  const profile = MODE_CONTROL[mode]
+  const drag = v.drag
+
   ctx.save()
   if (fx.shake > 0 && !v.reduceMotion) ctx.translate((Math.random() - 0.5) * fx.shake * 6, 0)
 
@@ -111,6 +169,19 @@ export function drawScene(ctx: CanvasRenderingContext2D, s: GameState, mode: Mod
   ctx.fillStyle = '#3b4252'; ctx.fillRect(-10, py(0) + 9, W + 20, 9)
   ctx.fillStyle = '#ffe08a'; for (let x = 0; x < W; x += 22) ctx.fillRect(x, py(0) + 13, 11, 1.5)
 
+  // Límite de alcance del modo activo cuando no cubre la ruta.
+  if (!reaches(mode, r)) {
+    const mx = px(ORIGIN.x + maxRange(mode))
+    ctx.save()
+    ctx.strokeStyle = '#ff9f43'
+    ctx.lineWidth = 1.6
+    ctx.setLineDash([4, 3])
+    ctx.beginPath(); ctx.moveTo(mx, py(0) - 24); ctx.lineTo(mx, py(0) + 2); ctx.stroke()
+    ctx.setLineDash([])
+    pill(ctx, mx, py(0) - 34, `MÁX. ${def.label.toUpperCase()}`, '#241602e0', '#ffb02e', '#ffd88a')
+    ctx.restore()
+  }
+
   // Colina que bloquea los tiros bajos.
   const hx = px(r.hillX), hw = r.hillHalf * SCALE, hh = r.hillHeight * SCALE
   const hill = ctx.createLinearGradient(0, py(r.hillHeight), 0, py(0)); hill.addColorStop(0, '#9b7b55'); hill.addColorStop(1, '#5e4630')
@@ -135,31 +206,245 @@ export function drawScene(ctx: CanvasRenderingContext2D, s: GameState, mode: Mod
   ctx.font = '700 9px ui-monospace, Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = '#ffffffcc'; ctx.fillText('ORIGEN', px(ORIGIN.x), H - 3); ctx.fillText('DESTINO', px(center), H - 3)
 
-  // Guía de puntería.
-  const ox = px(ORIGIN.x), oy = py(ORIGIN.y), a = (effectiveAngle(mode, angle) * Math.PI) / 180
-  if (preview) {
-    const pts = trajectory(mode, angle, power, 0.08)
-    pts.forEach((p, i) => { if (i % 2) return; const k = 1 - i / pts.length; ctx.fillStyle = v.aiming ? `rgba(255,255,255,${0.35 + 0.6 * k})` : `rgba(255,255,255,${0.2 + 0.4 * k})`; ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 1.2 + 1.6 * k, 0, Math.PI * 2); ctx.fill() })
-    const lx = px(landingX(mode, angle, power))
-    ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.arc(lx, py(0) - 15, 4, Math.PI, 0); ctx.lineTo(lx, py(0) - 4); ctx.closePath(); ctx.fill()
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(lx, py(0) - 15, 1.6, 0, Math.PI * 2); ctx.fill()
+  const ox = px(ORIGIN.x), oy = py(ORIGIN.y)
+
+  // Halo de selección del lanzador cuando está listo para agarrar.
+  if (preview && s.status === 'playing' && !drag.active && drag.canFire) {
+    const haloPulse = v.reduceMotion ? 0 : Math.sin(t * 4.5) * 2.2
+    const haloR = (drag.hovered ? 29 : 25) + haloPulse
+    ctx.save()
+    ctx.strokeStyle = drag.hovered ? MODE_COLOR[mode] : '#ffffffaa'
+    ctx.lineWidth = drag.hovered ? 2.4 : 1.6
+    ctx.setLineDash(drag.hovered ? [] : [5, 4])
+    ctx.beginPath(); ctx.arc(ox - 4, oy - 6, haloR, 0, Math.PI * 2); ctx.stroke()
+    ctx.restore()
   }
 
-  // Lanzador: vehículo del modo y brazo.
+  // Guía de puntería y huella de dispersión del lote.
+  const ft = flightTime(mode, effAngle, power)
+  const remainingSec = Math.max(0, ROUND_SECONDS - s.roundTime)
+  const arrivesInTime = ft <= remainingSec
+
+  if (preview) {
+    const pts = trajectory(mode, angle, power, mode === 'plane' ? 0.06 : 0.08)
+    let hit: { x: number; y: number } | null = null
+    const stepStride = mode === 'ship' ? 3 : mode === 'plane' ? 1 : 2
+    const trailTint = drag.active && drag.armed ? MODE_COLOR[mode] : '#ffffff'
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i]
+      if (hillBlocks(r, p.x, p.y)) { hit = p; break }
+      if (i % stepStride) continue
+      const k = 1 - i / pts.length
+      ctx.globalAlpha = drag.active ? 0.42 + 0.55 * k : 0.28 + 0.48 * k
+      ctx.fillStyle = trailTint
+      const dotR = mode === 'ship' ? 1.8 + 1.8 * k : mode === 'plane' ? 1 + 1.4 * k : 1.2 + 1.6 * k
+      ctx.beginPath(); ctx.arc(px(p.x), py(p.y), dotR, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.globalAlpha = 1
+    if (hit) {
+      const hx0 = px(hit.x), hy0 = py(hit.y)
+      ctx.strokeStyle = '#ff4f6d'; ctx.lineWidth = 2.4; ctx.lineCap = 'round'
+      ctx.beginPath(); ctx.moveTo(hx0 - 5, hy0 - 5); ctx.lineTo(hx0 + 5, hy0 + 5); ctx.moveTo(hx0 + 5, hy0 - 5); ctx.lineTo(hx0 - 5, hy0 + 5); ctx.stroke()
+      ctx.lineCap = 'butt'
+    } else {
+      const lxWorld = landingX(mode, angle, power)
+      const lx = px(lxWorld)
+      const onTarget = Math.abs(lxWorld - center) <= ZONE_HALF
+      const spreadPx = batchSpreadHalf(mode) * SCALE
+      const spreadY = zy - 4
+      if (lx + spreadPx >= -12 && lx - spreadPx <= W + 12) {
+        ctx.save()
+        ctx.strokeStyle = onTarget ? '#4fe08a' : '#ff9f43'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(lx - spreadPx, spreadY - 4); ctx.lineTo(lx - spreadPx, spreadY)
+        ctx.lineTo(lx + spreadPx, spreadY); ctx.lineTo(lx + spreadPx, spreadY - 4)
+        ctx.stroke()
+        for (let bi = 0; bi < def.boxes; bi++) {
+          const bxWorld = lxWorld + (bi - (def.boxes - 1) / 2) * def.spacing
+          const bx = px(bxWorld)
+          const boxOk = Math.abs(bxWorld - center) <= ZONE_HALF
+          ctx.fillStyle = boxOk ? '#4fe08a' : '#ff8b8b'
+          ctx.fillRect(bx - 1.5, spreadY - 3, 3, 4)
+        }
+        ctx.restore()
+      }
+      ctx.fillStyle = onTarget ? '#27c96f' : '#ff4f6d'
+      ctx.beginPath(); ctx.arc(lx, py(0) - 16, 4.2, Math.PI, 0); ctx.lineTo(lx, py(0) - 5); ctx.closePath(); ctx.fill()
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(lx, py(0) - 16, 1.6, 0, Math.PI * 2); ctx.fill()
+    }
+  }
+
+  // Arco de guía angular (mientras se apunta activamente con el mouse).
+  if (drag.active && drag.armed) {
+    ctx.save()
+    ctx.strokeStyle = `${MODE_COLOR[mode]}88`
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([3, 3])
+    const minRad = (profile.minAngle * Math.PI) / 180
+    const maxRad = (profile.maxAngle * Math.PI) / 180
+    if (profile.angleLocked === null) {
+      // Arco posterior abajo-izquierda mostrando los límites reales del modo.
+      ctx.beginPath()
+      ctx.arc(ox, oy, 26, Math.PI - maxRad, Math.PI - minRad)
+      ctx.stroke()
+    } else {
+      // Riel fijo a 45° hacia atrás y abajo con muescas graduadas.
+      const bx = -Math.SQRT1_2, by = Math.SQRT1_2
+      ctx.setLineDash([])
+      ctx.strokeStyle = '#9adbd4'
+      ctx.lineWidth = 3
+      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + bx * profile.pullVisualMax, oy + by * profile.pullVisualMax); ctx.stroke()
+      for (const q of [0.25, 0.5, 0.75, 1]) {
+        const mx = ox + bx * (10 + q * (profile.pullVisualMax - 10))
+        const my = oy + by * (10 + q * (profile.pullVisualMax - 10))
+        ctx.strokeStyle = q <= drag.tension ? '#2ec4b6' : '#ffffff88'
+        ctx.lineWidth = 1.6
+        ctx.beginPath(); ctx.moveTo(mx - 3, my - 3); ctx.lineTo(mx + 3, my + 3); ctx.stroke()
+      }
+    }
+    ctx.restore()
+  }
+
+  // Lanzador: vehículo del modo y mecanismo visual diferenciado.
   drawVehicle(ctx, mode, ox - 14, py(0) + 2, 0.95)
   ctx.fillStyle = '#2a3242'; roundRect(ctx, ox - 6, oy - 2, 12, 9, 2); ctx.fill()
   const len = 22 + power * 6
-  if (v.aiming && v.pull) {
-    ctx.strokeStyle = '#3a2416'; ctx.lineWidth = 2.5
-    ctx.beginPath(); ctx.moveTo(ox - 4, oy - 4); ctx.lineTo(v.pull.x, v.pull.y); ctx.lineTo(ox + 4, oy - 4); ctx.stroke()
-    crate(ctx, v.pull.x, v.pull.y, mode, 0, 8)
+
+  if (drag.active) {
+    if (!drag.armed) {
+      ctx.save()
+      ctx.strokeStyle = '#ffffff88'
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([4, 3])
+      ctx.beginPath(); ctx.arc(ox, oy, 16, 0, Math.PI * 2); ctx.stroke()
+      if (drag.pointer) {
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(drag.pointer.x, drag.pointer.y); ctx.stroke()
+      }
+      ctx.restore()
+    } else if (drag.pull) {
+      const hx0 = drag.pull.x, hy0 = drag.pull.y
+      ctx.save()
+      if (mode === 'road') {
+        ctx.strokeStyle = '#5c3314'
+        ctx.lineWidth = 4
+        ctx.beginPath(); ctx.moveTo(ox - 4, oy - 4); ctx.lineTo(hx0, hy0); ctx.lineTo(ox + 4, oy - 2); ctx.stroke()
+        ctx.strokeStyle = MODE_COLOR.road
+        ctx.lineWidth = 2
+        ctx.beginPath(); ctx.moveTo(ox - 4, oy - 4); ctx.lineTo(hx0, hy0); ctx.lineTo(ox + 4, oy - 2); ctx.stroke()
+        crate(ctx, hx0 - 3, hy0 + 2, 'road', -0.2, 6.5)
+        crate(ctx, hx0 + 3, hy0 - 1, 'road', 0.15, 6.5)
+      } else if (mode === 'rail') {
+        ctx.strokeStyle = '#178077'
+        ctx.lineWidth = 4.5
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(hx0, hy0); ctx.stroke()
+        ctx.strokeStyle = '#2ec4b6'
+        ctx.lineWidth = 2.2
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(hx0, hy0); ctx.stroke()
+        if (drag.offAxisWarning && drag.pointer) {
+          ctx.strokeStyle = '#ffd84daa'
+          ctx.lineWidth = 1.3
+          ctx.setLineDash([3, 3])
+          ctx.beginPath(); ctx.moveTo(hx0, hy0); ctx.lineTo(drag.pointer.x, drag.pointer.y); ctx.stroke()
+          ctx.setLineDash([])
+        }
+        ctx.fillStyle = '#134e48'
+        roundRect(ctx, hx0 - 7, hy0 - 5, 14, 10, 3); ctx.fill()
+        ctx.strokeStyle = '#9ff5eb'; ctx.lineWidth = 1.5; ctx.stroke()
+        crate(ctx, hx0, hy0 - 6, 'rail', -Math.PI / 4, 7)
+      } else if (mode === 'ship') {
+        // Cabo náutico con curvatura natural según tensión.
+        const sag = (1 - drag.tension) * 14
+        const mx = (ox + hx0) / 2
+        const my = (oy + hy0) / 2 + sag
+        ctx.strokeStyle = '#1d55b8'
+        ctx.lineWidth = 5
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo(mx, my, hx0, hy0); ctx.stroke()
+        ctx.strokeStyle = '#8ec0ff'
+        ctx.lineWidth = 2
+        ctx.setLineDash([5, 4])
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo(mx, my, hx0, hy0); ctx.stroke()
+        ctx.setLineDash([])
+        ctx.fillStyle = '#1d55b8'; ctx.strokeStyle = '#dbeaff'; ctx.lineWidth = 2
+        ctx.beginPath(); ctx.arc(hx0, hy0, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+        crate(ctx, hx0, hy0 - 3, 'ship', 0, 7.5)
+      } else {
+        // Avión: vector aerodinámico con chevrons propulsores.
+        const angPull = Math.atan2(hy0 - oy, hx0 - ox)
+        ctx.strokeStyle = '#ff4f6d'
+        ctx.lineWidth = 2.5
+        ctx.setLineDash([4, 3])
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(hx0, hy0); ctx.stroke()
+        ctx.setLineDash([])
+        ctx.fillStyle = '#ff4f6d'
+        for (const k of [0.35, 0.65, 0.92]) {
+          const cx0 = hx0 + (ox - hx0) * k, cy0 = hy0 + (oy - hy0) * k
+          ctx.save(); ctx.translate(cx0, cy0); ctx.rotate(angPull + Math.PI)
+          ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -4); ctx.lineTo(-1, 0); ctx.lineTo(-3, 4); ctx.closePath(); ctx.fill()
+          ctx.restore()
+        }
+        ctx.strokeStyle = `rgba(255,79,109,${0.35 + drag.tension * 0.5})`
+        ctx.lineWidth = 2
+        ctx.beginPath(); ctx.arc(hx0, hy0, 7 + drag.tension * 5, 0, Math.PI * 2); ctx.stroke()
+        crate(ctx, hx0, hy0, 'plane', a * -0.5, 7)
+      }
+      if (drag.atMax) {
+        ctx.strokeStyle = '#ffd84d'
+        ctx.lineWidth = 2
+        ctx.beginPath(); ctx.arc(hx0, hy0, 10, 0, Math.PI * 2); ctx.stroke()
+      }
+      ctx.restore()
+    }
   }
+
   ctx.strokeStyle = MODE_DARK[mode]; ctx.lineWidth = 7; ctx.lineCap = 'round'
   ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(a) * len, oy - Math.sin(a) * len); ctx.stroke()
   ctx.strokeStyle = MODE_COLOR[mode]; ctx.lineWidth = 4
   ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(a) * len, oy - Math.sin(a) * len); ctx.stroke()
   ctx.lineCap = 'butt'
   ctx.fillStyle = '#1d2430'; ctx.beginPath(); ctx.arc(ox, oy, 4, 0, Math.PI * 2); ctx.fill()
+  if (drag.hovered || drag.active) {
+    ctx.fillStyle = MODE_COLOR[mode]
+    ctx.beginPath(); ctx.arc(ox + Math.cos(a) * len, oy - Math.sin(a) * len, 3.6, 0, Math.PI * 2); ctx.fill()
+  }
+
+  // Etiquetas de telemetría contextual sobre el lanzador (sin saturar la intro).
+  if (preview && s.status === 'playing') {
+    if (drag.active) {
+      if (!drag.armed) {
+        pill(ctx, ox + 78, oy - 56, 'Arrastra ↙ · Suelta aquí para cancelar', '#1d2430eb', '#ffffff55', '#e4ecf5')
+      } else {
+        const angLabel = profile.angleLocked !== null ? `${profile.angleLocked}° FIJO` : `${Math.round(effAngle)}°`
+        const pwrLabel = `${Math.round(power * 100)}%${drag.atMax ? ' MÁX' : ''}`
+        const timeLabel = `⏱ ${ft.toFixed(1)} s`
+        const timeColor = arrivesInTime ? '#fbf7ec' : '#ff8b8b'
+        pill(
+          ctx,
+          ox + 86,
+          oy - 68,
+          `${angLabel} · ${pwrLabel} · ${timeLabel}`,
+          '#0f2320f0',
+          drag.atMax ? '#ffd84d' : MODE_COLOR[mode],
+          timeColor,
+        )
+        if (drag.offAxisWarning && mode === 'rail') {
+          pill(ctx, ox + 86, oy - 46, 'VÍA FIJA A 45° · solo fuerza', '#103531ee', '#2ec4b6', '#aef7ee')
+        } else if (mode === 'plane') {
+          pill(ctx, ox + 86, oy - 46, `+${batchEmissionsTonnes('plane', r).toFixed(1)} t CO₂e por lote`, '#3b121aee', '#ff4f6d', '#ffd4da')
+        }
+      }
+    } else if (drag.hovered || drag.showIntroCue) {
+      pill(
+        ctx,
+        ox + 68,
+        oy - 54,
+        drag.hovered ? `${profile.label} · arrastra ↙` : 'Arrastra desde aquí ↙',
+        '#0f2320e6',
+        MODE_COLOR[mode],
+        '#fbf7ec',
+      )
+    }
+  }
 
   // Cajas en vuelo.
   for (const b of s.boxes) crate(ctx, px(b.x), py(b.y), b.mode, v.reduceMotion ? 0 : b.x * 0.35 + b.id)

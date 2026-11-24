@@ -65,8 +65,7 @@ export function completeEpoch(id: WorldId) {
 
   const next = gameEpochs
     .map(epoch => epoch.id)
-    .filter(worldId => worldId !== id && snapshot.includes(worldId))
-  next.splice(gameEpochs.findIndex(epoch => epoch.id === id), 0, id)
+    .filter(worldId => worldId === id || snapshot.includes(worldId))
   commit(next)
 }
 
@@ -91,7 +90,7 @@ export function useCompletedEpochs(): readonly WorldId[] {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', event => {
-    if (event.key !== STORAGE_KEY) return
+    if (event.key !== STORAGE_KEY && event.key !== null) return
     snapshot = readProgress()
     emit()
   })

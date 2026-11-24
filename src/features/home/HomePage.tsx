@@ -3,7 +3,6 @@ import { Globe } from '../../components/Globe'
 import { useClimateData } from '../climate/useClimateData'
 import { getAnnualAnomaly } from '../climate/math'
 import { formatAnomaly } from '../explorer/model'
-import { gameModules } from '../games/catalog'
 import { WorldAtlas } from './WorldAtlas'
 
 const monthFormat = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' })
@@ -18,9 +17,9 @@ const ROUTE_ICON: Record<string, React.ReactNode> = {
   '06': ic('M6 3h9l4 4v14H6V3Zm9 0v4h4M9 12h7M9 16h7'),
 }
 const chapters = [
-  { number: '01', to: '/explorador', title: 'Explorador climático', copy: 'La lectura de una fecha en el globo y la comparación entre períodos.', meta: 'Mapa · indicador · comparación' },
-  { number: '02', to: '/linea-del-tiempo', title: 'Línea del tiempo', copy: 'El mapa del mundo y los acontecimientos cambian mientras recorres los años.', meta: 'Mapa · serie · reproducción' },
-  { number: '03', to: '/historia', title: 'Historia del clima', copy: 'Seis décadas de ciencia, acuerdos y decisiones.', meta: '1970—2025 · fuentes' },
+  { number: '01', to: '/explorador', title: 'Explorador climático', copy: 'Explora el globo en una fecha exacta, escucha la anomalía y compara dos períodos.', meta: 'Mapa · indicador · comparación' },
+  { number: '02', to: '/linea-del-tiempo', title: 'Línea del tiempo', copy: 'Reproductor animado año por año: observa cómo cambian el mapa y la serie NASA mientras aparecen los hitos.', meta: 'Reproductor · mapa · serie' },
+  { number: '03', to: '/historia', title: 'Historia del clima', copy: 'Bitácora documental por décadas (1970–2025): lectura a fondo de acuerdos, ciencia y sus fuentes.', meta: 'Bitácora · décadas · fuentes' },
   { number: '04', to: '/factores', title: 'Factores del cambio climático', copy: 'Energía, industria, movilidad, bosques y alimentación.', meta: 'Cinco fuerzas · datos' },
   { number: '05', to: '/minijuegos', title: 'Minijuegos', copy: 'Cinco mundos para decidir, probar y volver a intentar.', meta: 'Navegador · cinco misiones' },
   { number: '06', to: '/fuentes', title: 'Fuentes y metodología', copy: 'De dónde viene cada dato y qué no puede afirmarse.', meta: 'NASA · IPCC · OWID' },
@@ -43,12 +42,12 @@ function SignalSparkline() {
   return <svg className="signal-sparkline" viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby="spark-title spark-desc">
     <title id="spark-title">Evolución de la anomalía anual global desde 1926</title>
     <desc id="spark-desc">Serie anual J-D de NASA GISTEMP respecto a 1951–1980. El último valor completo es {last.year}: {formatAnomaly(last.value)}.</desc>
-    <defs><linearGradient id="spark-fill" x2="0" y2="1"><stop stopColor="#d89a62" stopOpacity=".5" /><stop offset="1" stopColor="#d89a62" stopOpacity="0" /></linearGradient></defs>
-    <line x1={padX} x2={width - padX} y1={y(0)} y2={y(0)} stroke="#d8cbb5" strokeDasharray="4 5" />
-    {summary.thresholds.level15 !== null && <line x1={padX} x2={width - padX} y1={y(summary.thresholds.level15)} y2={y(summary.thresholds.level15)} stroke="#a75238" strokeDasharray="7 5" opacity=".75" />}
+    <defs><linearGradient id="spark-fill" x2="0" y2="1"><stop stopColor="#e5a958" stopOpacity=".45" /><stop offset="1" stopColor="#e5a958" stopOpacity="0" /></linearGradient></defs>
+    <line x1={padX} x2={width - padX} y1={y(0)} y2={y(0)} stroke="#c7d6bc55" strokeDasharray="4 5" />
+    {summary.thresholds.level15 !== null && <line x1={padX} x2={width - padX} y1={y(summary.thresholds.level15)} y2={y(summary.thresholds.level15)} stroke="#f27c66" strokeDasharray="7 5" opacity=".85" />}
     <path d={`${path} L${x(values.length - 1)},${height - padY} L${x(0)},${height - padY} Z`} fill="url(#spark-fill)" />
-    <path d={path} fill="none" stroke="#173f38" strokeWidth="2" />
-    <circle cx={x(values.length - 1)} cy={y(last.value)} r="5" fill="#b75e3e" stroke="#f3e9d6" strokeWidth="2" />
+    <path d={path} fill="none" stroke="#f3cf86" strokeWidth="2.2" strokeLinejoin="round" />
+    <circle cx={x(values.length - 1)} cy={y(last.value)} r="5" fill="#e59856" stroke="#102f2a" strokeWidth="2" />
     <text x={padX} y={height - 1} className="spark-year">1926</text>
     <text x={width - padX} y={height - 1} textAnchor="end" className="spark-year">{last.year}</text>
   </svg>
@@ -117,12 +116,6 @@ export function HomePage() {
           <strong>{chapter.title}</strong>
           <span className="home-route-copy">{chapter.copy}</span>
           <span className="home-route-arrow" aria-hidden="true">→</span>
-        </Link>)}
-      </div>
-      <div className="home-worlds" aria-label="Acceso directo a los minijuegos">
-        <span className="home-worlds-label">Ir directo a un minijuego</span>
-        {gameModules.map((game, i) => <Link key={game.id} to={`/minijuegos?world=${game.id}`} aria-label={`Abrir el minijuego ${game.title}`}>
-          <b>{String(i + 1).padStart(2, '0')}</b>{game.title}<small>{game.theme}</small>
         </Link>)}
       </div>
     </section>

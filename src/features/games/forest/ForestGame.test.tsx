@@ -9,7 +9,7 @@ describe('Guardabosques (interfaz)', () => {
     expect(screen.getByRole('dialog', { name: /instrucciones/ })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: /Empezar ↗/ }))
     expect(screen.getAllByRole('button', { name: /^Parcela / })).toHaveLength(36)
-    expect(screen.getByText('10 / 10')).toBeTruthy()
+    expect(screen.getByText('8 / 10')).toBeTruthy()
   })
 
   it('restaurar gasta una acción y cultivar un bosque cambia la parcela', async () => {
@@ -17,7 +17,7 @@ describe('Guardabosques (interfaz)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Empezar ↗/ }))
     await userEvent.click(screen.getByRole('radio', { name: /Restaurar/ }))
     await userEvent.click(screen.getAllByRole('button', { name: /Cultivo$/ })[0])
-    expect(screen.getByText('9 / 10')).toBeTruthy()
+    expect(screen.getByText('7 / 10')).toBeTruthy()
     await userEvent.click(screen.getByRole('radio', { name: /Cultivar/ }))
     const forest = screen.getAllByRole('button', { name: /Bosque maduro$/ })[0]
     const label = forest.getAttribute('aria-label')!

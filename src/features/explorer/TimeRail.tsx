@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { historicalPeriods } from '../history/catalog'
-import { playSfx } from '../audio/sfx'
 import { useExplorer } from './ExplorerContext'
 import { FIRST_YEAR, fromIndex } from './model'
 
@@ -49,10 +48,8 @@ export function TimeRail({ variant = 'compact', showCard = true }: Props) {
 
   function move(value: number) {
     if (mode === 'monthly') {
-      playSfx('date')
       select(fromIndex(value))
     } else {
-      playSfx('timeline')
       select({ year: value, month: date.month })
     }
   }
@@ -81,21 +78,6 @@ export function TimeRail({ variant = 'compact', showCard = true }: Props) {
           </span>)}
         </div>
 
-        <div className="rail-markers">
-          {markers.map(item => <button
-            key={item.id}
-            type="button"
-            className={`rail-marker${openMarker === item.id ? ' is-open' : ''}`}
-            style={{ left: `${position(item.year)}%` }}
-            aria-label={`Evento histórico de ${item.year}: ${item.title}`}
-            aria-expanded={showCard ? openMarker === item.id : undefined}
-            onClick={() => {
-              select({ year: item.year, month: 1 })
-              if (showCard) setOpenMarker(current => current === item.id ? null : item.id)
-            }}
-          ><i /></button>)}
-        </div>
-
         <div className="rail-needle" style={{ left: `${selectedPosition}%` }} aria-hidden="true">
           <span>{date.year}</span>
         </div>
@@ -112,6 +94,21 @@ export function TimeRail({ variant = 'compact', showCard = true }: Props) {
         aria-valuetext={label}
         onChange={event => move(Number(event.target.value))}
       />
+
+      <div className="rail-markers" role="group" aria-label="Hitos históricos en la línea">
+        {markers.map(item => <button
+          key={item.id}
+          type="button"
+          className={`rail-marker${openMarker === item.id ? ' is-open' : ''}`}
+          style={{ left: `${position(item.year)}%` }}
+          aria-label={`Evento histórico de ${item.year}: ${item.title}`}
+          aria-expanded={showCard ? openMarker === item.id : undefined}
+          onClick={() => {
+            select({ year: item.year, month: 1 })
+            if (showCard) setOpenMarker(current => current === item.id ? null : item.id)
+          }}
+        ><i /></button>)}
+      </div>
     </div>
 
     <div className="rail-foot">

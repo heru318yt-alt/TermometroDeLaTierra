@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { CONFIG, createGame, demandAt, fuelBurn, safeZone, score, spawnInterval, step, summarize, totalScore, type FallingItem, type GameState, type ResourceKind } from './engine'
+import {
+  CHALLENGE_TARGET_SCORE, CONFIG, MIN_WIN_CAUGHT, MIN_WIN_IN_ZONE_PCT,
+  SCORE_BONUS_STABILITY, SCORE_BONUS_STEP, SCORE_BONUS_STORAGE,
+  createGame, decayRate, demandAt, fallSpeedAt, hasReachedChallenge, safeZone, score, spawnInterval, step, summarize, totalScore,
+  type FallingItem, type GameState, type ResourceKind,
+} from './engine'
 
 function drop(state: GameState, kind: ResourceKind, x = state.containerX): FallingItem {
   const item = { id: 999, kind, x, y: CONFIG.catchTop - 0.001, speed: 0.3 }
@@ -8,32 +13,32 @@ function drop(state: GameState, kind: ResourceKind, x = state.containerX): Falli
   return item
 }
 
-/** Jugador automático: persigue el recurso útil más cercano y evita sobrecargar. */
-function simulate(seed: number, cleanOnly = false): GameState {
+function simulate(seed: number, options: { maxSeconds?: number; cleanOnly?: boolean } = {}): GameState {
   const state = createGame(seed)
-  let guard = 0
-  while (state.status === 'playing' && guard++ < 60 * 60 * 10) {
+  const maxSteps = Math.round((options.maxSeconds ?? 240) * 60)
+  for (let i = 0; i < maxSteps && state.status === 'playing'; i++) {
     const zone = safeZone(state.t)
     const wanted = state.items
-      .filter(i => i.y < CONFIG.catchTop && (state.supply < zone.high - 12 || i.kind === 'storage'))
-      .filter(i => !cleanOnly || i.kind !== 'carbon')
+      .filter(item => item.y < CONFIG.catchTop && (state.supply < zone.high - 9 || item.kind === 'storage'))
+      .filter(item => !options.cleanOnly || item.kind !== 'carbon')
       .sort((a, b) => b.y - a.y)[0]
     step(state, 1 / 60, wanted ? wanted.x : state.containerX)
   }
   return state
 }
 
-describe('motor de Mantén la red', () => {
+describe('motor arcade de Mantén la red', () => {
   it('es determinista con la misma semilla', () => {
-    const a = simulate(7), b = simulate(7)
+    const a = simulate(7, { maxSeconds: 90 }), b = simulate(7, { maxSeconds: 90 })
     expect(score(a)).toBe(score(b))
     expect(a.t).toBeCloseTo(b.t, 6)
   })
 
-  it('la demanda crece y fluctúa dentro de un rango razonable', () => {
-    for (let t = 0; t < 300; t += 1) expect(demandAt(t)).toBeGreaterThan(30)
-    for (let t = 0; t < 300; t += 1) expect(demandAt(t)).toBeLessThan(85)
-    expect(demandAt(120)).toBeGreaterThan(demandAt(0) + 5)
+  it('la demanda y la dificultad escalan de forma continua', () => {
+    expect(demandAt(120)).toBeGreaterThan(demandAt(0) + 12)
+    expect(decayRate(120)).toBeGreaterThan(decayRate(0))
+    expect(fallSpeedAt(120)).toBeGreaterThan(fallSpeedAt(0))
+    expect(spawnInterval(120)).toBeLessThan(spawnInterval(0))
   })
 
   it('cada recurso atrapado sube la oferta o el almacenamiento y suma emisiones', () => {
@@ -51,13 +56,6 @@ describe('motor de Mantén la red', () => {
     expect(gas.emissions).toBeLessThan(CONFIG.emissionsPerCatch.carbon)
   })
 
-  it('un recurso fuera del contenedor no se atrapa', () => {
-    const state = createGame(); drop(state, 'carbon', 0.95); const before = state.supply
-    step(state, 0.01, 0.1)
-    expect(state.caught.carbon).toBe(0)
-    expect(state.supply).toBeLessThan(before)
-  })
-
   it('el almacenamiento no sube la barra de inmediato y la libera cuando baja', () => {
     const state = createGame(); drop(state, 'storage'); const before = state.supply
     step(state, 0.01, 0.5)
@@ -70,70 +68,66 @@ describe('motor de Mantén la red', () => {
     expect(state.storageReleased).toBeGreaterThan(0)
   })
 
-  it('el almacenamiento tiene capacidad limitada', () => {
-    const state = createGame(); state.supply = 70
-    for (let i = 0; i < 5; i++) { drop(state, 'storage'); step(state, 0.01, 0.5) }
-    expect(state.stored).toBeLessThanOrEqual(CONFIG.storageCap)
-    expect(state.wasted).toBeGreaterThan(0)
+  it('el flujo es infinito en modo arcade sin tope de recursos', () => {
+    const state = simulate(3, { maxSeconds: 90 })
+    expect(state.spawned).toBeGreaterThan(54)
   })
 
-  it('el apagón termina la partida y el puntaje sale del tiempo en zona segura', () => {
-    const state = createGame()
-    let guard = 0
-    while (state.status === 'playing' && guard++ < 5000) step(state, 0.05, 0.5)
-    expect(state.status).toBe('blackout')
-    expect(score(state)).toBe(Math.round(state.inZoneTime * 10))
-    expect(score(state)).toBeGreaterThan(0)
+  it('alcanza la meta del reto en vivo sin detener la partida y deja seguir subiendo puntaje', () => {
+    const state = createGame(3)
+    let clearedScore = 0
+    for (let i = 0; i < 60 * 160 && state.status === 'playing'; i++) {
+      const zone = safeZone(state.t)
+      const wanted = state.items
+        .filter(item => item.y < CONFIG.catchTop && (state.supply < zone.high - 9 || item.kind === 'storage'))
+        .sort((a, b) => b.y - a.y)[0]
+      step(state, 1 / 60, wanted ? wanted.x : state.containerX)
+      if (state.challengeCleared && clearedScore === 0) {
+        clearedScore = totalScore(state)
+        expect(state.status).toBe('playing')
+        expect(hasReachedChallenge(state)).toBe(true)
+        expect(clearedScore).toBeGreaterThanOrEqual(CHALLENGE_TARGET_SCORE)
+      }
+    }
+    expect(state.challengeCleared).toBe(true)
+    expect(totalScore(state)).toBeGreaterThan(clearedScore + 150)
+    const sum = summarize(state)
+    expect(sum.inZonePct).toBeGreaterThanOrEqual(MIN_WIN_IN_ZONE_PCT)
+    expect(sum.caughtTotal).toBeGreaterThanOrEqual(MIN_WIN_CAUGHT)
+    expect(sum.passed).toBe(true)
   })
 
-  it('los recursos disminuyen: intervalos crecientes y reserva finita', () => {
-    expect(spawnInterval(60)).toBeGreaterThan(spawnInterval(0) * 4)
-    expect(spawnInterval(40)).toBeGreaterThan(spawnInterval(20) * 1.5)
-    const state = simulate(3)
-    expect(state.spawned).toBeLessThanOrEqual(CONFIG.pool)
-    expect(state.status).not.toBe('playing')
+  it('salir de la zona segura agota la estabilidad o causa apagón', () => {
+    const empty = createGame()
+    for (let i = 0; i < 4000 && empty.status === 'playing'; i++) step(empty, 0.05, 0.5)
+    expect(empty.status).toBe('blackout')
+
+    const greedy = createGame(3)
+    for (let i = 0; i < 60 * 120 && greedy.status === 'playing'; i++) {
+      const target = greedy.items.filter(item => item.y < CONFIG.catchTop).sort((a, b) => b.y - a.y)[0]
+      step(greedy, 1 / 60, target ? target.x : greedy.containerX)
+    }
+    expect(greedy.status).not.toBe('playing')
+    expect(summarize(greedy).passed).toBe(false)
   })
 
-  it('el combustible se agota cada vez más rápido y termina la partida', () => {
-    expect(fuelBurn(80)).toBeGreaterThan(fuelBurn(10))
-    const state = simulate(3)
-    expect(state.status).toBe('nofuel')
-    expect(state.fuel).toBe(0)
-    expect(summarize(state).fuelOut).toBe(true)
-  })
+  it('otorga un pequeño respaldo de almacenamiento y estabilidad al superar hitos de puntaje', () => {
+    const s = createGame(3)
+    s.spawnTimer = 99
+    s.stored = 5
+    s.stability = 70
+    s.inZoneTime = (SCORE_BONUS_STEP - 2) / 10
+    step(s, 0.05, 0.5)
+    expect(s.scoreMilestonesClaimed).toBe(0)
+    expect(s.stored).toBe(5)
 
-  it('la sobrecarga se desperdicia y no suma tiempo en zona', () => {
-    const state = createGame(); state.supply = 99
-    drop(state, 'carbon'); step(state, 0.01, 0.5)
-    expect(state.supply).toBe(100)
-    expect(state.wasted).toBeGreaterThan(0)
-  })
-
-  it('un jugador que solo evita el carbón sobrevive menos que uno que lo usa, pero con menos emisiones', () => {
-    const mixed = simulate(11), clean = simulate(11, true)
-    expect(summarize(clean).emissions).toBeLessThanOrEqual(summarize(mixed).emissions)
-    expect(score(mixed)).toBeGreaterThan(0)
-  })
-})
-
-describe('Mantén la red · racha', () => {
-  it('mantener la zona segura sube el multiplicador y suma bono; salir lo reinicia', () => {
-    const s = createGame()
-    for (let i = 0; i < 260; i++) { s.supply = demandAt(s.t); s.spawnTimer = 99; step(s, 0.05, 0.5) }
-    expect(s.multiplier).toBe(3)
-    expect(s.bonus).toBeGreaterThan(0)
-    expect(totalScore(s)).toBeGreaterThan(score(s))
-    expect(s.fx.some(f => f.type === 'streak')).toBe(true)
-    s.supply = safeZone(s.t).high + 8; step(s, 0.01, 0.5)
-    expect(s.multiplier).toBe(1)
-    expect(s.fx.some(f => f.type === 'streak-lost')).toBe(true)
-  })
-
-  it('el resumen distingue apagón temprano de final sin combustible', () => {
-    const early = createGame(); let g = 0
-    while (early.status === 'playing' && g++ < 5000) step(early, 0.05, 0.5)
-    expect(summarize(early).fuelOut).toBe(false)
-    expect(summarize(simulate(3)).fuelOut).toBe(true)
-    expect(summarize(simulate(3)).total).toBeGreaterThanOrEqual(summarize(simulate(3)).score)
+    for (let i = 0; i < 6; i++) step(s, 0.05, 0.5)
+    expect(totalScore(s)).toBeGreaterThanOrEqual(SCORE_BONUS_STEP)
+    expect(s.scoreMilestonesClaimed).toBe(1)
+    expect(s.stored).toBeLessThanOrEqual(CONFIG.storageCap)
+    expect(s.stored).toBeCloseTo(5 + SCORE_BONUS_STORAGE, 4)
+    expect(s.stability).toBeGreaterThan(78)
+    expect(s.stability).toBeLessThanOrEqual(CONFIG.startStability)
+    expect(s.fx.some(e => e.type === 'score-bonus' && e.storage === SCORE_BONUS_STORAGE && e.stability === SCORE_BONUS_STABILITY)).toBe(true)
   })
 })

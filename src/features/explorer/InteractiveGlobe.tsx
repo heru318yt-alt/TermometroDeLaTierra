@@ -3,7 +3,7 @@ import type { KeyboardEvent, PointerEvent } from 'react'
 import landPaths from '../../assets/world-land.json'
 import { playSfx } from '../audio/sfx'
 
-type Props = { color: string; label: string; anomaly: string; onInteract?: () => void }
+type Props = { color: string; label: string; anomaly: string; showCoordinates?: boolean; onInteract?: () => void }
 type Drag = { x: number; y: number; longitude: number; tilt: number }
 
 const sourceWidth = 720
@@ -38,55 +38,103 @@ function makeLandMask() {
   return mask
 }
 
-function colorChannels(value: string) {
+const COLOR_CACHE = new Map<string, [number, number, number]>()
+
+function colorChannels(value: string): [number, number, number] {
+  const cached = COLOR_CACHE.get(value)
+  if (cached) return cached
+  const rgbMatch = value.match(/rgba?\(\s*(\d+)\s*[,\s]\s*(\d+)\s*[,\s]\s*(\d+)/i)
+  if (rgbMatch) {
+    const out: [number, number, number] = [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])]
+    COLOR_CACHE.set(value, out)
+    return out
+  }
+  const hexMatch = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  if (hexMatch) {
+    const h = hexMatch[1]
+    const out: [number, number, number] = h.length === 3
+      ? [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)]
+      : [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+    COLOR_CACHE.set(value, out)
+    return out
+  }
   const probe = document.createElement('canvas')
   probe.width = probe.height = 1
   const context = probe.getContext('2d')
   if (!context) return [190, 200, 190]
   context.fillStyle = value
   context.fillRect(0, 0, 1, 1)
-  return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+  const d = context.getImageData(0, 0, 1, 1).data
+  const out: [number, number, number] = [d[0], d[1], d[2]]
+  COLOR_CACHE.set(value, out)
+  return out
 }
 
-function renderGlobe(canvas: HTMLCanvasElement, mask: Uint8Array, color: string, longitude: number, tilt: number) {
+type SpherePixel = { index: number; x: number; y: number; z: number; shade: number }
+
+const SPHERE_LUT: SpherePixel[] = (() => {
+  const lut: SpherePixel[] = []
+  const lightX = -.42, lightY = .50, lightZ = .76
+  for (let py = 0; py < globeSize; py++) {
+    const y = (globeSize / 2 - py - .5) / (globeSize * .47)
+    for (let px = 0; px < globeSize; px++) {
+      const x = (px + .5 - globeSize / 2) / (globeSize * .47)
+      const radius = x * x + y * y
+      if (radius > 1) continue
+      const z = Math.sqrt(1 - radius)
+      const diffuse = Math.max(0, x * lightX + y * lightY + z * lightZ)
+      const shade = .34 + diffuse * .76
+      lut.push({ index: (py * globeSize + px) * 4, x, y, z, shade })
+    }
+  }
+  return lut
+})()
+
+function renderGlobe(
+  canvas: HTMLCanvasElement,
+  mask: Uint8Array,
+  color: string,
+  longitude: number,
+  tilt: number,
+  bufferRef: { current: ImageData | null },
+) {
   if (typeof CanvasRenderingContext2D === 'undefined') return
   const context = canvas.getContext('2d')
   if (!context) return
   const size = canvas.width
-  const image = context.createImageData(size, size)
+  if (!bufferRef.current || bufferRef.current.width !== size || bufferRef.current.height !== size) {
+    bufferRef.current = context.createImageData(size, size)
+  }
+  const image = bufferRef.current
   const [oceanR, oceanG, oceanB] = colorChannels(color)
   const angle = longitude * radians, pitch = tilt * radians
   const cosAngle = Math.cos(angle), sinAngle = Math.sin(angle)
   const cosPitch = Math.cos(pitch), sinPitch = Math.sin(pitch)
-  const lightX = -.42, lightY = .50, lightZ = .76
+  const data = image.data
 
-  for (let py = 0; py < size; py++) {
-    const y = (size / 2 - py - .5) / (size * .47)
-    for (let px = 0; px < size; px++) {
-      const x = (px + .5 - size / 2) / (size * .47)
-      const radius = x * x + y * y
-      if (radius > 1) continue
-      const z = Math.sqrt(1 - radius)
-      const rotatedX = x * cosAngle + z * sinAngle
-      const rotatedZ = -x * sinAngle + z * cosAngle
-      const rotatedY = y * cosPitch - rotatedZ * sinPitch
-      const frontZ = y * sinPitch + rotatedZ * cosPitch
-      const latitude = Math.asin(Math.max(-1, Math.min(1, rotatedY)))
-      const mapLongitude = Math.atan2(rotatedX, frontZ)
-      const landX = Math.min(mapWidth - 1, Math.max(0, Math.floor((mapLongitude / (2 * Math.PI) + .5) * mapWidth)))
-      const landY = Math.min(mapHeight - 1, Math.max(0, Math.floor((.5 - latitude / Math.PI) * mapHeight)))
-      const isLand = mask[landY * mapWidth + landX] === 1
-      const diffuse = Math.max(0, x * lightX + y * lightY + z * lightZ)
-      const shade = .34 + diffuse * .76
-      const grid = Math.abs(Math.cos(latitude * 6)) < .018 || Math.abs(Math.sin(mapLongitude * 6)) < .018
-      const base = isLand ? [35, 82, 68] : [oceanR, oceanG, oceanB]
-      const index = (py * size + px) * 4
-      const gridShade = grid ? .88 : 1
-      image.data[index] = Math.round(base[0] * shade * gridShade)
-      image.data[index + 1] = Math.round(base[1] * shade * gridShade)
-      image.data[index + 2] = Math.round(base[2] * shade * gridShade)
-      image.data[index + 3] = 255
+  for (let i = 0; i < SPHERE_LUT.length; i++) {
+    const { index, x, y, z, shade } = SPHERE_LUT[i]
+    const rotatedX = x * cosAngle + z * sinAngle
+    const rotatedZ = -x * sinAngle + z * cosAngle
+    const rotatedY = y * cosPitch - rotatedZ * sinPitch
+    const frontZ = y * sinPitch + rotatedZ * cosPitch
+    const latitude = Math.asin(Math.max(-1, Math.min(1, rotatedY)))
+    const mapLongitude = Math.atan2(rotatedX, frontZ)
+    const landX = Math.min(mapWidth - 1, Math.max(0, Math.floor((mapLongitude / (2 * Math.PI) + .5) * mapWidth)))
+    const landY = Math.min(mapHeight - 1, Math.max(0, Math.floor((.5 - latitude / Math.PI) * mapHeight)))
+    const isLand = mask[landY * mapWidth + landX] === 1
+    const grid = Math.abs(Math.cos(latitude * 6)) < .018 || Math.abs(Math.sin(mapLongitude * 6)) < .018
+    const factor = shade * (grid ? .88 : 1)
+    if (isLand) {
+      data[index] = Math.round(35 * factor)
+      data[index + 1] = Math.round(82 * factor)
+      data[index + 2] = Math.round(68 * factor)
+    } else {
+      data[index] = Math.round(oceanR * factor)
+      data[index + 1] = Math.round(oceanG * factor)
+      data[index + 2] = Math.round(oceanB * factor)
     }
+    data[index + 3] = 255
   }
   context.clearRect(0, 0, size, size)
   context.putImageData(image, 0, 0)
@@ -97,9 +145,10 @@ function renderGlobe(canvas: HTMLCanvasElement, mask: Uint8Array, color: string,
   context.stroke()
 }
 
-export function InteractiveGlobe({ color, label, anomaly, onInteract }: Props) {
+export function InteractiveGlobe({ color, label, anomaly, showCoordinates = false, onInteract }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const maskRef = useRef<Uint8Array | null>(null)
+  const imageBufferRef = useRef<ImageData | null>(null)
   const dragRef = useRef<Drag | null>(null)
   const [longitude, setLongitude] = useState(-70)
   const [tilt, setTilt] = useState(8)
@@ -117,15 +166,16 @@ export function InteractiveGlobe({ color, label, anomaly, onInteract }: Props) {
   useEffect(() => {
     try {
       const canvas = canvasRef.current
-      if (canvas && maskRef.current) renderGlobe(canvas, maskRef.current, color, longitude, tilt)
+      if (canvas && maskRef.current) renderGlobe(canvas, maskRef.current, color, longitude, tilt, imageBufferRef)
     } catch {
       // Canvas rendering is decorative; the selected value remains readable in the page text.
     }
   }, [color, longitude, tilt, maskReady])
 
   const startDrag = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
     dragRef.current = { x: event.clientX, y: event.clientY, longitude, tilt }
-    event.currentTarget.setPointerCapture(event.pointerId)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
     playSfx('map')
     onInteract?.()
   }
@@ -144,9 +194,17 @@ export function InteractiveGlobe({ color, label, anomaly, onInteract }: Props) {
   }
 
   return <div className="globe-interaction">
-    <canvas ref={canvasRef} className="world-globe" width={globeSize} height={globeSize}
-      role="img" tabIndex={0} aria-label={`Globo giratorio, ${label}: ${anomaly}. La anomalía se muestra igual en todo el océano, no es un mapa regional.`}
-      onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={rotateByKey} />
+    <div className={showCoordinates ? 'globe-canvas-ring has-coords' : 'globe-canvas-ring'}>
+      {showCoordinates && <>
+        <span className="map-coordinate map-coordinate-n" aria-hidden="true">90° N</span>
+        <span className="map-coordinate map-coordinate-s" aria-hidden="true">90° S</span>
+        <span className="map-coordinate map-coordinate-w" aria-hidden="true">180° O</span>
+        <span className="map-coordinate map-coordinate-e" aria-hidden="true">180° E</span>
+      </>}
+      <canvas ref={canvasRef} className="world-globe" width={globeSize} height={globeSize}
+        role="img" tabIndex={0} aria-label={`Globo giratorio, ${label}: ${anomaly}. La anomalía se muestra igual en todo el océano, no es un mapa regional.`}
+        onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={rotateByKey} />
+    </div>
     <div className="globe-help"><span>Arrastra para girar · usa las flechas del teclado</span><button type="button" data-sfx="map" onClick={() => { setLongitude(-70); setTilt(8); onInteract?.() }}>Restablecer vista</button></div>
   </div>
 }

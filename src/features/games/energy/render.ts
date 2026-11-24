@@ -167,7 +167,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, s: GameState, fx: FxLay
     const x0 = cx - cw + 14 + i * ((cw * 2 - 28) / cells)
     const k = Math.max(0, Math.min(1, filled - i))
     ctx.fillStyle = '#0b1424'; roundRect(ctx, x0, cy + 16, (cw * 2 - 28) / cells - 2, 5, 2); ctx.fill()
-    if (k > 0 && (i < 2 || i > 3)) { ctx.fillStyle = '#4fe08a'; roundRect(ctx, x0, cy + 16, ((cw * 2 - 28) / cells - 2) * k, 5, 2); ctx.fill() }
+    if (k > 0) { ctx.fillStyle = '#4fe08a'; roundRect(ctx, x0, cy + 16, ((cw * 2 - 28) / cells - 2) * k, 5, 2); ctx.fill() }
   }
   ctx.restore()
 

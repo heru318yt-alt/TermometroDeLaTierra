@@ -37,15 +37,15 @@ export const MODES: Record<Mode, ModeDef> = {
 }
 export const MODE_ORDER: Mode[] = ['road', 'rail', 'ship', 'plane']
 
-export interface RouteDef { id: string; name: string; distance: number; hillX: number; hillHalf: number; hillHeight: number; text: string }
+export interface RouteDef { id: string; name: string; distance: number; minDelivered: number; hillX: number; hillHalf: number; hillHeight: number; text: string }
 
-const route = (id: string, name: string, distance: number, text: string): RouteDef =>
-  ({ id, name, distance, hillX: ORIGIN.x + distance * 0.45, hillHalf: 3.5, hillHeight: 7, text })
+const route = (id: string, name: string, distance: number, minDelivered: number, text: string): RouteDef =>
+  ({ id, name, distance, minDelivered, hillX: ORIGIN.x + distance * 0.45, hillHalf: 3.5, hillHeight: 7, text })
 
 export const ROUTES: RouteDef[] = [
-  route('cercana', 'Ruta corta', 40, 'Dos ciudades cercanas: todos los modos llegan.'),
-  route('media', 'Ruta media', 70, 'La distancia crece y la carretera ya no alcanza.'),
-  route('larga', 'Ruta larga', 100, 'Destino lejano: solo el barco y el avión llegan.'),
+  route('cercana', 'Ruta corta', 40, 4, 'Dos ciudades cercanas: todos los modos llegan.'),
+  route('media', 'Ruta media', 70, 5, 'La distancia crece y la carretera ya no alcanza.'),
+  route('larga', 'Ruta larga', 100, 5, 'Destino lejano: solo el barco y el avión llegan.'),
 ]
 
 export const routeCenter = (r: RouteDef) => ORIGIN.x + r.distance
@@ -132,6 +132,25 @@ export function landingX(mode: Mode, angle: number, power: number): number {
   const g = MODES[mode].g
   const t = (vy + Math.sqrt(vy * vy + 2 * g * ORIGIN.y)) / g
   return ORIGIN.x + vx * t
+}
+
+/** Tiempo estimado de vuelo (en segundos) hasta y = 0. */
+export function flightTime(mode: Mode, angle: number, power: number): number {
+  const { vy } = launchVelocity(mode, angle, power)
+  const g = MODES[mode].g
+  return (vy + Math.sqrt(vy * vy + 2 * g * ORIGIN.y)) / g
+}
+
+/** Semiancho de dispersión del lote alrededor del punto central de caída. */
+export function batchSpreadHalf(mode: Mode): number {
+  const def = MODES[mode]
+  return ((def.boxes - 1) * def.spacing) / 2
+}
+
+/** Emisiones estimadas (en toneladas de CO₂e) de un lanzamiento en la ruta dada. */
+export function batchEmissionsTonnes(mode: Mode, r: RouteDef): number {
+  const def = MODES[mode]
+  return (def.boxes * def.gPerTkm * routeKm(r)) / 1000
 }
 
 export function hillBlocks(r: RouteDef, x: number, y: number): boolean {
@@ -259,6 +278,14 @@ export function score(state: GameState): number { return state.delivered }
 /** Cajas entregadas + bono por racha de lotes precisos. */
 export function totalScore(state: GameState): number { return state.delivered + state.bonus }
 
+export interface RouteCheck {
+  id: string
+  name: string
+  delivered: number
+  minDelivered: number
+  ok: boolean
+}
+
 export interface Summary {
   score: number
   total: number
@@ -269,15 +296,25 @@ export interface Summary {
   gPerTkm: number
   cleanRoute: boolean
   dominant: Mode | null
+  routeChecks: RouteCheck[]
+  routesPassed: number
+  passed: boolean
 }
 
 export function summarize(state: GameState): Summary {
   const gPerTkm = state.deliveredTkm > 0 ? (state.emissionsKg * 1000) / state.deliveredTkm : 0
   let dominant: Mode | null = null
   for (const m of MODE_ORDER) if (state.launches[m] > 0 && (!dominant || state.launches[m] * MODES[m].boxes > state.launches[dominant] * MODES[dominant].boxes)) dominant = m
+  const routeChecks: RouteCheck[] = ROUTES.map((r, i) => {
+    const delivered = state.deliveredByRoute[i] ?? 0
+    return { id: r.id, name: r.name, delivered, minDelivered: r.minDelivered, ok: delivered >= r.minDelivered }
+  })
+  const routesPassed = routeChecks.filter(r => r.ok).length
+  const passed = routesPassed === ROUTES.length
   return {
     score: state.delivered, total: totalScore(state), bonus: state.bonus, bestStreak: state.bestStreak, launched: state.launched, emissionsTonnes: state.emissionsKg / 1000,
-    gPerTkm, cleanRoute: state.delivered >= 20 && gPerTkm > 0 && gPerTkm <= 100, dominant,
+    gPerTkm, cleanRoute: passed && state.delivered >= 20 && gPerTkm > 0 && gPerTkm <= 100, dominant,
+    routeChecks, routesPassed, passed,
   }
 }
 

@@ -59,14 +59,18 @@ export function WorldIllustration({ world, title }: Props) {
 
     {/* Wind farm on the ridge; towers reach the same ground line. */}
     <g transform="translate(276 158)">
-      <path d="M-2 0v-62" stroke="#f1e4c8" strokeWidth="3.4" />
-      <g className="art-rotor" stroke="#f1e4c8" strokeWidth="3" fill="none"><circle r="22" fill="none" stroke="none" /><path d="M0 0v-22M0 0l19 11M0 0-19 11" /></g>
-      <circle r="2.6" fill="#f1e4c8" />
+      <path d="M0 0v-62" stroke="#f1e4c8" strokeWidth="3.4" />
+      <g transform="translate(0 -62)">
+        <g className="art-rotor" stroke="#f1e4c8" strokeWidth="3" fill="none"><circle r="22" fill="transparent" stroke="none" /><path d="M0 0v-22M0 0l19 11M0 0-19 11" /></g>
+        <circle r="2.6" fill="#f1e4c8" />
+      </g>
     </g>
     <g transform="translate(304 160)">
-      <path d="M-1.5 0v-44" stroke="#f1e4c8" strokeWidth="2.6" />
-      <g className="art-rotor" stroke="#f1e4c8" strokeWidth="2.2" fill="none"><circle r="15" fill="none" stroke="none" /><path d="M0 0v-15M0 0l13 8M0 0-13 8" /></g>
-      <circle r="2" fill="#f1e4c8" />
+      <path d="M0 0v-44" stroke="#f1e4c8" strokeWidth="2.6" />
+      <g transform="translate(0 -44)">
+        <g className="art-rotor" stroke="#f1e4c8" strokeWidth="2.2" fill="none"><circle r="15" fill="transparent" stroke="none" /><path d="M0 0v-15M0 0l13 8M0 0-13 8" /></g>
+        <circle r="2" fill="#f1e4c8" />
+      </g>
     </g>
 
     <g stroke="#6f8f78" strokeWidth="1.2" fill="none" opacity=".4">
@@ -95,7 +99,7 @@ export function WorldIllustration({ world, title }: Props) {
     <g stroke="#213f36" strokeWidth="2.2">
       <path d="M22 110 42 96l20 14 20-14 20 14 20-14 20 14 20-14 20 14v54H22z" fill="#617d70" />
       <path d="M22 110h160" stroke="#25443b" strokeWidth="1.4" opacity=".7" />
-      <g fill="#e7c06b" stroke="none">
+      <g fill="#e7c06b" stroke="none" className="art-pulse">
         <rect x="34" y="120" width="11" height="14" /><rect x="55" y="120" width="11" height="14" /><rect x="76" y="120" width="11" height="14" /><rect x="97" y="120" width="11" height="14" /><rect x="118" y="120" width="11" height="14" /><rect x="139" y="120" width="11" height="14" /><rect x="160" y="120" width="11" height="14" />
         <rect x="34" y="144" width="11" height="14" /><rect x="55" y="144" width="11" height="14" /><rect x="97" y="144" width="11" height="14" /><rect x="118" y="144" width="11" height="14" /><rect x="139" y="144" width="11" height="14" />
       </g>
@@ -104,8 +108,11 @@ export function WorldIllustration({ world, title }: Props) {
     </g>
 
     <g transform="translate(157 66)">
-      <g className="art-smoke" fill="#f4ead2" opacity=".7">
+      <g className="art-smoke" fill="#f4ead2" opacity=".76">
         <circle cy="-8" r="9" /><circle cx="10" cy="-19" r="7" /><circle cx="-8" cy="-25" r="6" />
+      </g>
+      <g className="art-smoke art-delay" fill="#efe3c8" opacity=".6">
+        <circle cx="-4" cy="-12" r="6" /><circle cx="7" cy="-26" r="5" />
       </g>
     </g>
 
@@ -113,7 +120,7 @@ export function WorldIllustration({ world, title }: Props) {
     <g stroke="#213f36" strokeWidth="2.2">
       <path d="M192 164v-42h62v42z" fill="#879389" />
       <path d="M188 118h70v5h-70z" fill="#25443b" />
-      <g fill="#e7c06b" stroke="none"><rect x="201" y="128" width="9" height="11" /><rect x="216" y="128" width="9" height="11" /><rect x="231" y="128" width="9" height="11" /></g>
+      <g fill="#e7c06b" stroke="none" className="art-pulse art-delay"><rect x="201" y="128" width="9" height="11" /><rect x="216" y="128" width="9" height="11" /><rect x="231" y="128" width="9" height="11" /></g>
       <rect x="204" y="146" width="22" height="18" fill="#25443b" />
       <rect x="235" y="146" width="12" height="18" fill="#25443b" />
       <path d="M204 155h22" stroke="#c7b58c" strokeWidth="1" />
@@ -125,6 +132,9 @@ export function WorldIllustration({ world, title }: Props) {
       <path d="M268 126h34M268 146h34" stroke="#a08c66" strokeWidth="1.4" />
       <path d="M254 136h14v8h-14z" fill="#9a8a68" />
     </g>
+    <g stroke="#e7c06b" strokeWidth="1.6" strokeDasharray="3 4" className="art-dash">
+      <path d="M255 140h13M180 156h12" />
+    </g>
 
     {/* Yard: crates and bollards sit on the paving, not in mid-air. */}
     <g fill="#8d7a58" opacity=".9">
@@ -133,10 +143,18 @@ export function WorldIllustration({ world, title }: Props) {
     </g>
     <g fill="#c7b58c"><rect x="120" y="190" width="5" height="12" /><rect x="152" y="190" width="5" height="12" /><rect x="184" y="190" width="5" height="12" /></g>
 
-    {/* Reuse loop: a signal painted in the sky, never attached to a building. */}
-    <g transform="translate(296 40)" fill="none" stroke="#9b5f3d" strokeWidth="2.4">
-      <path d="M0 0a20 20 0 1 1-1 40" strokeDasharray="5 6" className="art-dash" />
-      <path d="m-6 34 5 8 6-7" />
+    {/* Animated circular-economy loop centered cleanly above the warehouse and silo. */}
+    <g transform="translate(248 48)">
+      <circle r="24" fill="#f4ead238" stroke="#9b5f3d" strokeWidth="1" strokeOpacity=".35" />
+      <circle r="21" fill="none" stroke="#9b5f3d" strokeWidth="2" strokeDasharray="5 5" className="art-dash" />
+      <g className="art-rotor" fill="none" stroke="#25443b" strokeWidth="2" strokeLinecap="round">
+        <circle r="15" fill="transparent" stroke="none" />
+        <path d="M-12-6A13 13 0 0 1 10-8" stroke="#9b5f3d" />
+        <path d="m7-11 4 3-4 4" stroke="#9b5f3d" />
+        <path d="M12 6A13 13 0 0 1-10 8" stroke="#25443b" />
+        <path d="m-7 11-4-3 4-4" stroke="#25443b" />
+        <circle r="4.5" fill="#d4c5a1" stroke="#25443b" strokeWidth="1.6" />
+      </g>
     </g>
 
     <g stroke="#7d6a49" strokeWidth="1.2" opacity=".5"><path d="M0 186h320M0 206h320" /></g>
@@ -148,7 +166,7 @@ export function WorldIllustration({ world, title }: Props) {
       <linearGradient id="world-transport-road" x2="0" y2="1"><stop stopColor="#55625c" /><stop offset="1" stopColor="#283b36" /></linearGradient>
     </defs>
     <rect width="320" height="220" fill="url(#world-transport-sky)" />
-    <circle cx="270" cy="42" r="20" fill="#e7b65d" />
+    <circle cx="270" cy="42" r="20" fill="#e7b65d" className="art-pulse" />
     <path d="M0 108 40 84l30 12 42-34 34 30 36-15 48 30 40-16 50 24v23H0z" fill="#87a57d" />
 
     {/* Buildings and sidewalk share the same street line. */}
@@ -163,25 +181,41 @@ export function WorldIllustration({ world, title }: Props) {
     <rect y="144" width="320" height="14" fill="#d8cfb5" />
     <path d="M0 144h320M0 158h320" stroke="#a99a7c" strokeWidth="1.6" />
 
-    {/* Road surface and lane markings. */}
+    {/* Road surface and animated lane markings. */}
     <path d="M0 158h320v62H0z" fill="url(#world-transport-road)" />
-    <g stroke="#e9dfc9" strokeWidth="2.4" strokeDasharray="16 14" opacity=".7"><path d="M0 190h320" /></g>
-    {/* Road edge and lane markings. */}
+    <g stroke="#e9dfc9" strokeWidth="2.4" strokeDasharray="16 14" opacity=".7" className="art-dash"><path d="M0 190h320" /></g>
 
-    {/* Bus on the far lane; wheels rest on the asphalt. */}
-    <g transform="translate(118 148)">
-      <path d="M0 14q0-14 16-14h92q14 0 16 14v34H0z" fill="#d8a94f" stroke="#1f3a33" strokeWidth="2.2" />
-      <g fill="#bcd8d1"><rect x="10" y="8" width="20" height="16" rx="2" /><rect x="36" y="8" width="20" height="16" rx="2" /><rect x="62" y="8" width="20" height="16" rx="2" /><rect x="88" y="8" width="16" height="16" rx="2" /></g>
-      <path d="M6 30h114" stroke="#1f3a33" strokeWidth="1.6" />
-      <circle cx="27" cy="48" r="9" fill="#1c342e" /><circle cx="96" cy="48" r="9" fill="#1c342e" />
-      <circle cx="27" cy="48" r="3.4" fill="#d8cfb5" /><circle cx="96" cy="48" r="3.4" fill="#d8cfb5" />
+    {/* Bus on the far lane with cruise motion and spinning wheel hubs. */}
+    <g className="art-vehicle">
+      <g transform="translate(118 148)">
+        <path d="M0 14q0-14 16-14h92q14 0 16 14v34H0z" fill="#d8a94f" stroke="#1f3a33" strokeWidth="2.2" />
+        <g fill="#bcd8d1"><rect x="10" y="8" width="20" height="16" rx="2" /><rect x="36" y="8" width="20" height="16" rx="2" /><rect x="62" y="8" width="20" height="16" rx="2" /><rect x="88" y="8" width="16" height="16" rx="2" /></g>
+        <path d="M6 30h114" stroke="#1f3a33" strokeWidth="1.6" />
+        {[27, 96].map(cx => (
+          <g key={cx} transform={`translate(${cx} 48)`}>
+            <circle r="9" fill="#1c342e" />
+            <g className="art-rotor" stroke="#d8cfb5" strokeWidth="1.4"><circle r="7" fill="transparent" stroke="none" /><path d="M-5.5 0h11M0-5.5v11" /></g>
+            <circle r="3" fill="#e9dfc9" />
+          </g>
+        ))}
+      </g>
     </g>
 
-    {/* Bicycle and rider in the near lane, both wheels on the road. */}
-    <g transform="translate(18 176)" stroke="#24483e" fill="none">
-      <g strokeWidth="2.6"><circle cx="0" cy="26" r="12" /><circle cx="42" cy="26" r="12" /><path d="M0 26 14 8h16l12 18M14 8l9 18M23 26h19M30 8l5-7h9" /></g>
-      <circle cx="36" cy="-12" r="5.4" fill="#24483e" stroke="none" />
-      <g strokeWidth="2"><path d="M36-6 32 8M33 2 46 7M32 8 27 18M32 8l9 8M47 4l5-3" /></g>
+    {/* High-contrast bicycle and rider moving in the near lane. */}
+    <g className="art-vehicle-alt">
+      <g transform="translate(22 176)" fill="none">
+        {[0, 42].map(cx => (
+          <g key={cx} transform={`translate(${cx} 26)`}>
+            <circle r="12" stroke="#e9dfc9" strokeWidth="2.6" />
+            <g className="art-rotor" stroke="#e7b65d" strokeWidth="1.2"><circle r="10" fill="transparent" stroke="none" /><path d="M-9 0h18M0-9v18" /></g>
+            <circle r="2" fill="#e9dfc9" />
+          </g>
+        ))}
+        <path d="M0 26 14 8h16l12 18M14 8l9 18M23 26h19M30 8l5-7h9" stroke="#e7b65d" strokeWidth="2.6" strokeLinecap="round" />
+        <circle cx="36" cy="-12" r="5.4" fill="#f1d9a7" />
+        <path d="M36-6 32 8M33 2 46 7" stroke="#d87a4a" strokeWidth="2.8" strokeLinecap="round" />
+        <path d="M32 8 27 18M32 8l9 8M47 4l5-3" stroke="#e9dfc9" strokeWidth="2.2" strokeLinecap="round" />
+      </g>
     </g>
 
     {/* Pedestrian on the sidewalk, feet on the pavement. */}
@@ -190,10 +224,10 @@ export function WorldIllustration({ world, title }: Props) {
       <path d="M0-22v12M0-15-6-6M0-15l7-8M0-10l-5 10M0-10l6 10" />
     </g>
 
-    {/* Street trees rooted in the sidewalk. */}
+    {/* Street trees rooted in the sidewalk with gentle sway. */}
     <g stroke="#315448" strokeWidth="2">
-      <path d="M294 144v-24m0 0-11-10m11 10 10-11" /><circle cx="294" cy="112" r="7" fill="#5f8a5e" />
-      <path d="M312 144v-18m0 0-8-8m8 8 8-8" /><circle cx="312" cy="118" r="5.5" fill="#6f9870" />
+      <g className="art-sway"><path d="M294 144v-24m0 0-11-10m11 10 10-11" /><circle cx="294" cy="112" r="7" fill="#5f8a5e" /></g>
+      <g className="art-sway art-delay"><path d="M312 144v-18m0 0-8-8m8 8 8-8" /><circle cx="312" cy="118" r="5.5" fill="#6f9870" /></g>
     </g>
 
     <g stroke="#7f8f7e" strokeWidth="1.1" opacity=".4"><path d="M0 174h320M0 208h320" /></g>
@@ -266,60 +300,91 @@ export function WorldIllustration({ world, title }: Props) {
   return <svg {...common}>
     <defs>
       <linearGradient id="world-farm-sky" x2="0" y2="1"><stop stopColor="#d6e7df" /><stop offset="1" stopColor="#f1e5c0" /></linearGradient>
-      <linearGradient id="world-farm-field" x2="0" y2="1"><stop stopColor="#b79c63" /><stop offset="1" stopColor="#d6ba7c" /></linearGradient>
+      <linearGradient id="world-farm-pasture" x2="0" y2="1"><stop stopColor="#89ac6e" /><stop offset="1" stopColor="#65884f" /></linearGradient>
+      <linearGradient id="world-farm-wheat" x2="0" y2="1"><stop stopColor="#dcb662" /><stop offset="1" stopColor="#bf9546" /></linearGradient>
+      <linearGradient id="world-farm-soil" x2="0" y2="1"><stop stopColor="#936d45" /><stop offset="1" stopColor="#6d4e31" /></linearGradient>
     </defs>
     <rect width="320" height="220" fill="url(#world-farm-sky)" />
-    <circle cx="262" cy="40" r="19" fill="#e9b95e" />
-    <path d="M0 96 42 72l32 16 40-32 36 32 36-18 40 26 44-20 50 24v32H0z" fill="#9bb189" />
+    <circle cx="262" cy="40" r="19" fill="#e9b95e" className="art-pulse" />
+    <path d="M0 96 42 72l32 16 40-32 36 32 36-18 40 26 44-20 50 24v32H0z" fill="#8ea77c" />
 
-    {/* Field surface and rows converging on one vanishing point. */}
-    <path d="M0 138h320v82H0z" fill="url(#world-farm-field)" />
-    <g stroke="#8a744a" strokeWidth="1.4" opacity=".5" fill="none">
-      <path d="M160 138 0 220M160 138 50 220M160 138 100 220M160 138 150 220M160 138 210 220M160 138 260 220M160 138 320 220" />
-      <path d="M0 154q160-7 320 0M0 174q160-8 320 0M0 198q160-9 320 0" />
+    {/* Contoured agroecological terraces replacing the flat grid. */}
+    <path d="M0 120q85-9 165-2t155 6v96H0z" fill="url(#world-farm-wheat)" />
+    <path d="M0 140q90 9 175-4t145 5v79H0z" fill="url(#world-farm-pasture)" />
+    <path d="M0 172q95-14 185 5t135-3v46H0z" fill="url(#world-farm-soil)" />
+    <g stroke="#543b24" strokeWidth="1.2" fill="none" opacity=".42">
+      <path d="M84 188q75 11 236 0M94 204q85 9 226-1" />
     </g>
 
-    {/* Farmhouse on the field edge: roof, walls, door and windows aligned. */}
-    <g transform="translate(24 100)" stroke="#6b4330" strokeWidth="2.2">
-      <path d="M0 38V14L22 0l22 14v24z" fill="#e9dcb8" />
-      <path d="M-6 16 22-5l28 21z" fill="#b96645" />
-      <g fill="#7fa39a" stroke="none"><rect x="8" y="18" width="8" height="8" /><rect x="29" y="18" width="8" height="8" /></g>
-      <rect x="18" y="27" width="10" height="11" fill="#5c7b58" stroke="none" />
+    {/* Farmstead cluster: grain silo, rustic barn and farmhouse. */}
+    <g transform="translate(12 94)" stroke="#533725" strokeWidth="1.6">
+      <rect x="3" y="10" width="13" height="24" fill="#d8c7a3" />
+      <path d="M3 10a6.5 5 0 0 1 13 0z" fill="#8d998d" />
+      <path d="M20 34V15l12-7 12 7v19z" fill="#9f4735" />
+      <rect x="26" y="22" width="11" height="12" fill="#e9dcb8" />
+    </g>
+    <g transform="translate(60 104)" stroke="#533725" strokeWidth="1.8">
+      <path d="M0 28V10L16 1l16 9v18z" fill="#efe2c2" />
+      <path d="M-4 11 16-2l20 13z" fill="#b96645" />
+      <rect x="6" y="13" width="6" height="6" fill="#6f9790" stroke="none" />
+      <rect x="20" y="13" width="6" height="6" fill="#6f9790" stroke="none" />
+      <rect x="13" y="19" width="6" height="9" fill="#4f704e" stroke="none" />
     </g>
 
-    {/* Greenhouse on the right with its frame touching the ground. */}
-    <g transform="translate(232 112)" stroke="#4e7380" strokeWidth="2" fill="none">
-      <path d="M0 40V20Q22-2 44 20v20z" fill="#d7e8df" fillOpacity=".55" />
-      <path d="M0 40h44M0 20h44M22 40V4M11 40V10M33 40V10" opacity=".8" />
-      <path d="M6 40V28h9v12" fill="#cfe0d6" />
+    {/* Agroforestry shade trees. */}
+    <g transform="translate(116 136)">
+      <g className="art-sway">
+        <path d="M0 0v-18" stroke="#5c422a" strokeWidth="3" />
+        <circle cx="0" cy="-24" r="11" fill="#3e724a" /><circle cx="-7" cy="-19" r="7" fill="#4d8456" /><circle cx="7" cy="-20" r="6" fill="#558d5e" />
+      </g>
     </g>
 
-    {/* Crop plants anchored in the soil along the perspective rows. */}
-    <g fill="none" stroke="#4d7842" strokeWidth="2.2">
-      <g transform="translate(78 188) scale(.85)"><g className="art-sway"><path d="M0 0v-20m0 12-7-7m7 4 8-8m-8 15-6-6m6 3 7-7" /></g></g>
-      <g transform="translate(106 170) scale(.8)"><g className="art-sway art-delay"><path d="M0 0v-18m0 11-6-6m6 3 7-7m-7 13-6-6m6 3 6-6" /></g></g>
-      <g transform="translate(132 194) scale(.95)"><g className="art-sway"><path d="M0 0v-22m0 13-7-7m7 4 8-8m-8 15-6-6m6 3 7-7" /></g></g>
-      <g transform="translate(160 156) scale(.65)"><g className="art-sway art-delay"><path d="M0 0v-18m0 11-6-6m6 3 7-7m-7 13-6-6m6 3 6-6" /></g></g>
-      <g transform="translate(198 208)"><g className="art-sway"><path d="M0 0v-24m0 14-8-8m8 5 9-9m-9 16-7-6m7 3 8-8" /></g></g>
-      <g transform="translate(228 184) scale(.9)"><g className="art-sway art-delay"><path d="M0 0v-22m0 13-7-7m7 4 8-8m-8 15-6-6m6 3 7-7" /></g></g>
-      <g transform="translate(252 210) scale(1.05)"><g className="art-sway"><path d="M0 0v-24m0 14-8-8m8 5 9-9m-9 16-7-6m7 3 8-8" /></g></g>
+    {/* Greenhouse on masonry plinth with green seedlings inside. */}
+    <g transform="translate(226 118)" stroke="#3e626e" strokeWidth="1.8" fill="none">
+      <rect x="-2" y="30" width="46" height="5" fill="#8b7d64" stroke="#533725" strokeWidth="1.2" />
+      <path d="M0 30V14Q21-4 42 14v16z" fill="#d7ebe4" fillOpacity=".72" />
+      <g fill="#5b8b4e" stroke="none"><circle cx="21" cy="25" r="3.5" /><circle cx="29" cy="24" r="4" /></g>
+      <path d="M0 14h42M11 30V6M21 30V2M31 30V6" opacity=".82" />
+      <path d="M6 30V20h8v10" fill="#bdd4cb" />
     </g>
 
-    {/* Sheep with hooves resting on their field row. */}
-    <g transform="translate(146 158) scale(.42)" fill="#314f3e">
-      <ellipse rx="16" ry="9" /><circle cx="15" cy="-6" r="5.4" />
-      <path d="M-5 8v10m10-10v10m-15-10v12m20-12v12" stroke="#314f3e" strokeWidth="2.6" />
-    </g>
-    <g transform="translate(178 184) scale(.38)" fill="#314f3e">
-      <ellipse rx="13" ry="7.5" /><circle cx="12" cy="-5" r="4.6" />
-      <path d="M-4 6v8m8-8v8m-12-8v10m16-10v10" stroke="#314f3e" strokeWidth="2.2" />
+    {/* High-contrast woolly sheep on the green meadow. */}
+    {[
+      { x: 148, y: 154, s: 0.6 },
+      { x: 182, y: 162, s: 0.52 },
+    ].map((sh, idx) => (
+      <g key={idx} transform={`translate(${sh.x} ${sh.y}) scale(${sh.s})`}>
+        <path d="M-8 8v8M-2 8v8M6 8v8M11 8v8" stroke="#352b24" strokeWidth="2.8" strokeLinecap="round" />
+        <g fill="#f4ead2" stroke="#7d6a49" strokeWidth="1.4">
+          <circle cx="-6" cy="0" r="7.5" /><circle cx="3" cy="-2" r="8.5" /><circle cx="10" cy="2" r="6.5" /><circle cx="-1" cy="4" r="7.5" />
+        </g>
+        <ellipse cx="16" cy="-2" rx="5.5" ry="4.5" fill="#352b24" />
+      </g>
+    ))}
+
+    {/* Swaying wheat and leafy crops along cultivated soil contours. */}
+    <g fill="none" strokeLinecap="round">
+      {[
+        { x: 102, y: 190, c: '#5c8c4a', d: '' },
+        { x: 138, y: 204, c: '#d8a63c', d: ' art-delay' },
+        { x: 178, y: 192, c: '#5c8c4a', d: '' },
+        { x: 218, y: 206, c: '#d8a63c', d: ' art-delay' },
+        { x: 264, y: 194, c: '#5c8c4a', d: '' },
+        { x: 294, y: 206, c: '#d8a63c', d: ' art-delay' },
+      ].map((p, idx) => (
+        <g key={idx} transform={`translate(${p.x} ${p.y})`}>
+          <g className={`art-sway${p.d}`} stroke={p.c} strokeWidth="2">
+            <path d="M0 0v-18m0 11-5-5m5 2 6-6m-6 12-5-5m5 2 5-5" />
+          </g>
+        </g>
+      ))}
     </g>
 
-    {/* Irrigation pond at the lower edge, with a calm reflective surface. */}
-    <ellipse cx="38" cy="201" rx="40" ry="10" fill="#6f9ba0" opacity=".85" />
-    <ellipse cx="30" cy="199" rx="19" ry="3.4" fill="#c8e0dc" opacity=".8" />
-    <path d="M6 201q32 5 64 0" fill="none" stroke="#4e7a80" strokeWidth="1.2" opacity=".5" />
-
-    <g stroke="#8a744a" strokeWidth="1.2" opacity=".45"><path d="M0 214h320" /></g>
+    {/* Irrigation pond at lower left with animated water ripples. */}
+    <ellipse cx="44" cy="198" rx="38" ry="10" fill="#6f9ba0" stroke="#476e74" strokeWidth="1.2" />
+    <ellipse cx="38" cy="197" rx="18" ry="3.2" fill="#c8e0dc" className="art-ripple" />
+    <g stroke="#4a7441" strokeWidth="1.5" fill="none">
+      <g transform="translate(14 198)"><g className="art-sway"><path d="M0 0v-14M-3 0q-1-7-5-10" /></g></g>
+    </g>
   </svg>
 }

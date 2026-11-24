@@ -27,5 +27,11 @@ export const mapEvents: MapEvent[] = historicalPeriods.flatMap(period => period.
   ...event, id: `${event.year}-${event.title}`, place: PLACES[event.title] ?? null, periodLabel: period.label,
 })))
 
-/** Proyección equirectangular del archivo de contornos (720 × 360). */
-export const project = (p: Place) => ({ x: (p.lon + 180) * 2, y: (90 - p.lat) * 2 })
+/** Proyección pseudo-cilíndrica del archivo de contornos (720 × 360). */
+export const project = (p: Place) => {
+  const envelope = Math.sqrt(Math.max(0, 1 - (p.lat / 110) ** 2))
+  return {
+    x: 360 + (p.lon / 180) * 345 * envelope,
+    y: 190 - (p.lat / 90) * 165,
+  }
+}

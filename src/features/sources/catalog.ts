@@ -75,11 +75,11 @@ export const sources: SourceEntry[] = [
     url: 'https://www.naturalearthdata.com/about/terms-of-use/', linkLabel: 'naturalearthdata.com',
   },
   {
-    id: 'course', number: '10', name: 'Referencia de la asignatura',
-    organization: 'Arquitectura de Sistemas Multimedia', kind: 'Recurso',
-    description: 'Recurso proporcionado por el profesor. No se pudo verificar su contenido durante esta implementación y no se reutilizó su código.',
-    usedFor: 'Referencia externa del curso.',
-    url: 'https://temperatura-mu.vercel.app/', linkLabel: 'temperatura-mu.vercel.app',
+    id: 'course', number: '10', name: 'De NASA GISTEMP a React · Guía de la asignatura',
+    organization: 'Arquitectura de Sistemas Multimedia · UAO', kind: 'Recurso',
+    description: 'Tutorial interactivo del curso sobre descarga local de GLB.Ts+dSST.csv (índice L-OTI v4), tratamiento de datos ausentes (***), doble escala de referencia (1951–1980 y aproximación preindustrial 1880–1900), visualización en cliente y sonificación con Web Audio API. La implementación de este observatorio es propia y no copia su código.',
+    usedFor: 'Guía metodológica y referencia del curso para la arquitectura de datos y sonificación.',
+    url: 'https://temperatura-mu.vercel.app/#step-2', linkLabel: 'temperatura-mu.vercel.app',
   },
 ]
 

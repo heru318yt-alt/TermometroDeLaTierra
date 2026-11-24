@@ -1,350 +1,552 @@
+import type { ReactNode } from 'react'
+
 type Props = { factor: string; title: string }
 
-const common = { viewBox: '0 0 640 420', role: 'img' as const, className: 'factor-illustration', preserveAspectRatio: 'xMidYMid meet' }
+type PlateSpec = {
+  badge: string
+  render: () => ReactNode
+}
+
+const PLATES: Record<string, PlateSpec> = {
+  energia: {
+    badge: '01 · ENERGÍA',
+    render: () => (
+      <g className="factor-scene factor-scene-energia">
+        <rect width="640" height="420" fill="var(--sj-sky-a)" />
+        <path d="M0 166Q200 144 400 164T640 154V420H0Z" fill="var(--sj-sky-b)" />
+        <circle cx="518" cy="90" r="46" fill="var(--sj-sun)" className="art-pulse" />
+
+        {/* Distant layered ridges */}
+        <path d="M0 240L96 208L186 226L302 192L444 222L540 198L640 218V420H0Z" fill="var(--sj-far)" />
+        <path d="M0 264H640V420H0Z" fill="var(--sj-water)" />
+        <g fill="var(--sj-glow)" opacity=".45" className="art-ripple">
+          <rect x="218" y="276" width="66" height="3" rx="1.5" />
+          <rect x="272" y="290" width="84" height="3" rx="1.5" />
+        </g>
+
+        {/* Left Fossil Thermal Plant Plateau (Carbón / Gas y humo CO2) */}
+        <path d="M0 248H188L230 330H0Z" fill="var(--sj-mid)" />
+        <g transform="translate(24 190)">
+          <rect x="0" y="34" width="116" height="36" fill="var(--sj-near)" />
+          <polygon points="0,34 26,18 52,34 78,18 116,34" fill="var(--sj-near)" />
+          <polygon points="16,34 30,34 26,-16 20,-16" fill="var(--sj-near)" />
+          <polygon points="88,34 102,34 98,-8 92,-8" fill="var(--sj-near)" />
+          <rect x="14" y="46" width="18" height="12" fill="var(--sj-accent)" className="art-pulse" />
+          <rect x="44" y="46" width="18" height="12" fill="var(--sj-accent)" className="art-pulse art-delay" />
+          <g transform="translate(23 -20)">
+            <g className="art-smoke" fill="var(--sj-near)" opacity=".55">
+              <circle cx="4" cy="-6" r="11" />
+              <circle cx="20" cy="-16" r="15" />
+              <circle cx="44" cy="-24" r="11" />
+            </g>
+          </g>
+          <g transform="translate(95 -12)">
+            <g className="art-smoke art-delay" fill="var(--sj-near)" opacity=".45">
+              <circle cx="4" cy="-5" r="9" />
+              <circle cx="18" cy="-14" r="12" />
+            </g>
+          </g>
+        </g>
+
+        {/* Right Clean Transition Ridge: Wind + Solar + Battery Storage */}
+        <path d="M332 292Q468 258 640 278V420H300Z" fill="var(--sj-mid)" />
+
+        {/* Three centered wind turbines planted solidly on right ridge */}
+        {[
+          { x: 432, y: 278, h: 112, r: 40, delay: ' art-delay' },
+          { x: 508, y: 270, h: 138, r: 50, delay: '' },
+          { x: 582, y: 280, h: 100, r: 36, delay: ' art-delay' },
+        ].map(t => (
+          <g key={t.x} transform={`translate(${t.x} ${t.y})`}>
+            <polygon points={`-4.5,0 4.5,0 1.6,-${t.h} -1.6,-${t.h}`} fill="var(--sj-light)" />
+            <g transform={`translate(0 -${t.h})`}>
+              <g className={`art-rotor${t.delay}`}>
+                <circle r={t.r} fill="transparent" />
+                <polygon points={`-2.6,0 2.6,0 0,-${t.r}`} fill="var(--sj-light)" />
+                <polygon points={`-2.6,0 2.6,0 0,-${t.r}`} fill="var(--sj-light)" transform="rotate(120)" />
+                <polygon points={`-2.6,0 2.6,0 0,-${t.r}`} fill="var(--sj-light)" transform="rotate(240)" />
+              </g>
+              <circle r="4.2" fill="var(--sj-accent)" />
+            </g>
+          </g>
+        ))}
+
+        {/* Angled solar collector panels & battery storage container */}
+        <g transform="translate(362 292)">
+          <rect x="20" y="28" width="4" height="12" fill="var(--sj-near)" />
+          <rect x="82" y="32" width="4" height="12" fill="var(--sj-near)" />
+          <polygon points="0,28 54,10 86,20 32,38" fill="var(--sj-panel)" />
+          <polygon points="56,32 110,14 142,24 88,42" fill="var(--sj-panel)" />
+          <polygon points="10,27 50,14 60,18 20,31" fill="var(--sj-glow)" opacity=".5" className="art-pulse" />
+        </g>
+
+        {/* Grid Battery Storage Unit + Electrical Grid Pylons feeding foreground city */}
+        <path d="M0 344Q190 318 390 346T640 338V420H0Z" fill="var(--sj-near)" />
+        <g fill="none" strokeLinecap="round">
+          <path d="M140 242Q156 286 172 305Q206 320 240 305Q257 316 274 321" stroke="var(--sj-light)" strokeOpacity=".35" strokeWidth="1.6" />
+          <path d="M324 321Q353 326 382 324" stroke="var(--sj-light)" strokeOpacity=".35" strokeWidth="1.6" />
+          <path d="M140 242Q156 286 172 305Q206 320 240 305Q257 316 274 321" stroke="var(--sj-sun)" strokeWidth="2.4" strokeDasharray="8 16" className="art-dash" />
+          <path d="M324 321Q353 326 382 324" stroke="var(--sj-sun)" strokeWidth="2.4" strokeDasharray="8 16" className="art-dash" />
+        </g>
+        <g transform="translate(274 308)">
+          <rect x="0" y="0" width="46" height="26" rx="4" fill="var(--sj-panel)" />
+          <rect x="46" y="7" width="4" height="12" rx="1.5" fill="var(--sj-light)" />
+          <rect x="7" y="6" width="8" height="14" rx="1.5" fill="var(--sj-sun)" className="art-pulse" />
+          <rect x="19" y="6" width="8" height="14" rx="1.5" fill="var(--sj-sun)" className="art-pulse art-delay" />
+          <rect x="31" y="6" width="8" height="14" rx="1.5" fill="var(--sj-glow)" className="art-pulse" />
+        </g>
+        {[172, 240].map(x => (
+          <g key={x} transform={`translate(${x} 336)`}>
+            <polygon points="-8,24 -1.5,-40 1.5,-40 8,24 4,24 0,-22 -4,24" fill="var(--sj-light)" opacity=".9" />
+            <rect x="-12" y="-32" width="24" height="3" fill="var(--sj-light)" />
+          </g>
+        ))}
+
+        {/* Town cottages lit cleanly along bottom terrace */}
+        <g>
+          <polygon points="56,404 114,404 114,376 85,352 56,376" fill="var(--sj-light)" />
+          <polygon points="85,352 114,376 114,404 85,404" fill="var(--sj-accent)" />
+          <rect x="67" y="380" width="10" height="12" fill="var(--sj-sun)" className="art-pulse" />
+          <polygon points="134,410 182,410 182,386 158,366 134,386" fill="var(--sj-light)" />
+          <polygon points="158,366 182,386 182,410 158,410" fill="var(--sj-accent)" />
+          <rect x="144" y="390" width="9" height="10" fill="var(--sj-sun)" className="art-pulse art-delay" />
+        </g>
+      </g>
+    ),
+  },
+
+  industria: {
+    badge: '02 · INDUSTRIA',
+    render: () => (
+      <g className="factor-scene factor-scene-industria">
+        <rect width="640" height="420" fill="var(--sj-sky-a)" />
+        <path d="M0 170Q220 150 440 172L640 160V420H0Z" fill="var(--sj-sky-b)" />
+        <circle cx="486" cy="88" r="40" fill="var(--sj-sun)" opacity=".85" />
+
+        <path d="M0 236Q150 200 310 226Q460 192 640 220V420H0Z" fill="var(--sj-far)" />
+
+        {/* Centered Circular Economy loop */}
+        <g transform="translate(560 76)" opacity=".9">
+          <g className="art-rotor" fill="none" strokeWidth="4" strokeLinecap="round">
+            <circle r="24" fill="transparent" stroke="none" />
+            <path d="M-18-8A20 20 0 0 1 16-10M11-16l6 6-7 5" stroke="var(--sj-accent)" />
+            <path d="M18 8A20 20 0 0 1-16 10M-11 16l-6-6 7-5" stroke="var(--sj-near)" />
+          </g>
+        </g>
+
+        {/* Continuous Industrial Ground Banks & River Channel */}
+        <path d="M0 284H640V420H0Z" fill="var(--sj-water)" />
+        <path d="M0 264H258L240 420H0Z" fill="var(--sj-near)" />
+        <path d="M406 264H640V420H428Z" fill="var(--sj-near)" />
+
+        {/* Bank-to-bank Concrete Arch Bridge (cemento & construcción urbana) */}
+        <path
+          d="M250 264H414V292H396a26 24 0 0 0-52 0H322a26 24 0 0 0-52 0H250Z"
+          fill="var(--sj-mid)"
+        />
+        <g fill="var(--sj-glow)" opacity=".55" className="art-ripple">
+          <rect x="266" y="338" width="84" height="4" rx="2" />
+          <rect x="288" y="366" width="96" height="4" rx="2" />
+          <rect x="256" y="392" width="72" height="3.5" rx="1.75" />
+        </g>
+
+        {/* Left Foundry, Cement Silos & Blast Furnace */}
+        <polygon points="74,264 94,264 89,88 79,88" fill="var(--sj-near)" />
+        <polygon points="122,264 138,264 134,116 126,116" fill="var(--sj-mid)" />
+        <g transform="translate(84 80)">
+          <g className="art-smoke" fill="var(--sj-light)" opacity=".74">
+            <circle cx="4" cy="-6" r="14" />
+            <circle cx="24" cy="-18" r="17" />
+            <circle cx="52" cy="-28" r="12" />
+          </g>
+          <g className="art-smoke art-delay" fill="var(--sj-glow)" opacity=".5">
+            <circle cx="14" cy="-12" r="10" />
+            <circle cx="38" cy="-24" r="13" />
+          </g>
+        </g>
+        <path d="M28 264V192L72 172V192L116 172V192L160 172V264Z" fill="var(--sj-mid)" />
+        <g fill="var(--sj-sun)" className="art-pulse">
+          <path d="M52 264V234a13 13 0 0 1 26 0v30Z" />
+          <path d="M98 264V234a13 13 0 0 1 26 0v30Z" />
+        </g>
+        {/* Cement/limestone silos & conveyor feed */}
+        <rect x="176" y="168" width="32" height="96" fill="var(--sj-light)" />
+        <ellipse cx="192" cy="168" rx="16" ry="7" fill="var(--sj-sun)" />
+        <rect x="218" y="182" width="28" height="82" fill="var(--sj-accent)" />
+        <ellipse cx="232" cy="182" rx="14" ry="6" fill="var(--sj-sun)" />
+        <path
+          d="M158 178L192 168L232 182"
+          fill="none"
+          stroke="var(--sj-near)"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M158 178L192 168L232 182"
+          fill="none"
+          stroke="var(--sj-glow)"
+          strokeWidth="2.4"
+          strokeDasharray="8 12"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="art-dash"
+        />
+
+        {/* Right Bank: Steel Urban Frame & Crane + Recycled Material Stack */}
+        <g transform="translate(468 158)">
+          {/* Building skeletal frame (acero + concreto) */}
+          <rect x="0" y="0" width="96" height="106" fill="none" stroke="var(--sj-light)" strokeWidth="4" />
+          <rect x="0" y="34" width="96" height="5" fill="var(--sj-light)" />
+          <rect x="0" y="70" width="96" height="5" fill="var(--sj-light)" />
+          <rect x="46" y="0" width="5" height="106" fill="var(--sj-light)" />
+          <rect x="6" y="75" width="38" height="31" fill="var(--sj-accent)" />
+          {/* Tower crane arm */}
+          <rect x="-26" y="-42" width="10" height="148" fill="var(--sj-accent)" />
+          <polygon points="-46,-42 84,-42 74,-52 -38,-52" fill="var(--sj-sun)" />
+          <g transform="translate(56 -42)">
+            <g className="art-pendulum">
+              <rect x="-1.5" y="0" width="3" height="24" fill="var(--sj-light)" />
+              <rect x="-18" y="24" width="36" height="6" fill="var(--sj-glow)" />
+            </g>
+          </g>
+        </g>
+
+        {/* Recycled steel beam yard on foreground left */}
+        <g transform="translate(44 334)">
+          <rect x="0" y="16" width="58" height="10" fill="var(--sj-light)" />
+          <rect x="6" y="4" width="46" height="10" fill="var(--sj-accent)" />
+          <rect x="76" y="10" width="52" height="16" fill="var(--sj-mid)" />
+        </g>
+      </g>
+    ),
+  },
+
+  transporte: {
+    badge: '03 · MOVILIDAD',
+    render: () => (
+      <g className="factor-scene factor-scene-transporte">
+        <rect width="640" height="420" fill="var(--sj-sky-a)" />
+        <path d="M0 132Q240 112 640 128V420H0Z" fill="var(--sj-sky-b)" />
+        <circle cx="116" cy="74" r="34" fill="var(--sj-sun)" className="art-pulse" />
+
+        {/* Aviation jet & geometric contrail */}
+        <path
+          d="M276 74Q402 52 522 34"
+          fill="none"
+          stroke="var(--sj-light)"
+          strokeWidth="2.4"
+          strokeDasharray="10 14"
+          strokeLinecap="round"
+          className="art-dash"
+        />
+        <polygon points="548,32 524,26 530,34 522,40" fill="var(--sj-light)" />
+
+        {/* Distant hills */}
+        <path d="M0 162L118 128L240 154L384 122L512 150L640 132V194H0Z" fill="var(--sj-far)" />
+
+        {/* Elevated Rail Viaduct & Electric Train completely above the bay */}
+        <path
+          d="M0 168H640V196H560a30 26 0 0 0-60 0H420a30 26 0 0 0-60 0H280a30 26 0 0 0-60 0H140a30 26 0 0 0-60 0H0Z"
+          fill="var(--sj-mid)"
+        />
+        <g transform="translate(138 148)">
+          <g className="art-vehicle">
+            <path d="M0 0H156Q182 0 192 20H0Z" fill="var(--sj-light)" />
+            <rect x="12" y="5" width="134" height="6" fill="var(--sj-near)" />
+            <rect x="0" y="14" width="184" height="4" fill="var(--sj-accent)" />
+          </g>
+        </g>
+
+        {/* Open Coastal Bay cleanly below viaduct (y=196..296) */}
+        <rect x="0" y="196" width="640" height="102" fill="var(--sj-water)" />
+        <g fill="var(--sj-glow)" opacity=".55" className="art-ripple">
+          <rect x="52" y="220" width="76" height="3.5" rx="1.75" />
+          <rect x="180" y="254" width="92" height="3.5" rx="1.75" />
+          <rect x="524" y="226" width="68" height="3" rx="1.5" />
+        </g>
+        {/* Cargo Ship floating cleanly in center-right open water (no viaduct overlap) */}
+        <g transform="translate(454 246)">
+          <g className="art-vehicle-alt">
+            <polygon points="-58,0 58,0 44,20 -46,20" fill="var(--sj-near)" />
+            <rect x="-36" y="-14" width="24" height="14" fill="var(--sj-accent)" />
+            <rect x="-8" y="-14" width="24" height="14" fill="var(--sj-sun)" />
+            <rect x="22" y="-22" width="16" height="22" fill="var(--sj-light)" />
+            <rect x="-70" y="22" width="140" height="3" rx="1.5" fill="var(--sj-glow)" opacity=".68" />
+          </g>
+        </g>
+
+        {/* Foreground Urban Boulevard & Bike Lane */}
+        <rect x="0" y="294" width="640" height="24" fill="var(--sj-far)" />
+        <rect x="0" y="318" width="640" height="64" fill="var(--sj-panel)" />
+        <rect x="0" y="382" width="640" height="38" fill="var(--sj-near)" />
+        <path
+          d="M12 350H628"
+          fill="none"
+          stroke="var(--sj-sun)"
+          strokeWidth="3.2"
+          strokeDasharray="18 20"
+          strokeLinecap="round"
+          className="art-dash"
+        />
+
+        {/* Road Cargo Truck (left lane, subtle exhaust) */}
+        <g transform="translate(88 308)">
+          <g className="art-vehicle">
+            <rect x="0" y="0" width="54" height="24" rx="2" fill="var(--sj-light)" />
+            <polygon points="56,6 72,6 78,16 78,24 56,24" fill="var(--sj-accent)" />
+            <rect x="60" y="9" width="11" height="7" fill="var(--sj-near)" />
+            <circle cx="14" cy="24" r="5.5" fill="var(--sj-near)" />
+            <circle cx="42" cy="24" r="5.5" fill="var(--sj-near)" />
+            <circle cx="66" cy="24" r="5.5" fill="var(--sj-near)" />
+            <g className="art-smoke" fill="var(--sj-light)" opacity=".58">
+              <circle cx="-8" cy="18" r="4" />
+              <circle cx="-18" cy="14" r="5" />
+            </g>
+          </g>
+        </g>
+
+        {/* Clean Electric City Bus on right lane */}
+        <g transform="translate(274 344)">
+          <g className="art-vehicle">
+            <rect x="0" y="0" width="110" height="26" rx="8" fill="var(--sj-accent)" />
+            <rect x="10" y="5" width="22" height="10" rx="2" fill="var(--sj-light)" />
+            <rect x="38" y="5" width="22" height="10" rx="2" fill="var(--sj-light)" />
+            <rect x="66" y="5" width="28" height="10" rx="2" fill="var(--sj-sun)" />
+            <circle cx="24" cy="26" r="6.5" fill="var(--sj-near)" />
+            <circle cx="86" cy="26" r="6.5" fill="var(--sj-near)" />
+          </g>
+        </g>
+
+        {/* Protected Foreground Bike Lane + Cyclist Silhouette (ciclovía) */}
+        <g transform="translate(476 384)">
+          <g className="art-vehicle-alt" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="0" cy="20" r="10" stroke="var(--sj-light)" strokeWidth="2.6" />
+            <circle cx="34" cy="20" r="10" stroke="var(--sj-light)" strokeWidth="2.6" />
+            <path d="M0 20L12 8H25L34 20M12 8L18 20H0M25 8L27 3H32" stroke="var(--sj-sun)" strokeWidth="2.4" />
+            <circle cx="24" cy="-6" r="4.5" fill="var(--sj-sun)" />
+            <path d="M12 8L20 0L29 4M12 8L18 19" stroke="var(--sj-light)" strokeWidth="2.8" />
+          </g>
+        </g>
+      </g>
+    ),
+  },
+
+  bosques: {
+    badge: '04 · BOSQUES',
+    render: () => (
+      <g className="factor-scene factor-scene-bosques">
+        <rect width="640" height="420" fill="var(--sj-sky-a)" />
+        <path d="M0 162Q280 140 640 164V420H0Z" fill="var(--sj-sky-b)" />
+        <circle cx="486" cy="76" r="36" fill="var(--sj-sun)" />
+
+        {/* Atmospheric diagonal sunbeams over intact primary forest (right) */}
+        <polygon points="410,18 492,18 620,308 496,308" fill="var(--sj-sun)" opacity=".2" className="art-pulse" />
+        <polygon points="344,18 402,18 524,302 426,302" fill="var(--sj-sun)" opacity=".14" className="art-pulse art-delay" />
+
+        {/* Distant mountain ridges & forest horizon */}
+        <path d="M0 240L96 186L184 222L286 174L398 228L512 182L640 218V420H0Z" fill="var(--sj-far)" />
+        <path d="M0 268Q190 236 376 260Q516 244 640 256V420H0Z" fill="var(--sj-mid)" />
+
+        {/* LEFT HALF: Cleared Deforestation Patch + Stumps + Burning Edge + Rising Carbon */}
+        <path d="M0 258Q144 240 278 272L218 420H0Z" fill="var(--sj-accent)" opacity=".88" />
+        {[
+          { x: 48, y: 312, s: 1.1 },
+          { x: 96, y: 294, s: 0.9 },
+          { x: 146, y: 318, s: 1.05 },
+          { x: 194, y: 298, s: 0.85 },
+        ].map((stump, idx) => (
+          <g key={idx} transform={`translate(${stump.x} ${stump.y}) scale(${stump.s})`}>
+            <polygon points="-10,12 10,12 7,-6 -7,-6" fill="var(--sj-near)" />
+            <ellipse cx="0" cy="-6" rx="7" ry="2.5" fill="var(--sj-sun)" />
+          </g>
+        ))}
+        {/* Wildfire ember + released CO2 plume on cleared boundary */}
+        <g transform="translate(226 284)">
+          <path d="M0 0Q8-22 16 0Q24-28 32 0Z" fill="var(--sj-sun)" className="art-pulse" />
+          <g className="art-smoke" fill="var(--sj-near)" opacity=".55">
+            <circle cx="14" cy="-22" r="11" />
+            <circle cx="24" cy="-42" r="14" />
+            <circle cx="34" cy="-62" r="10" />
+          </g>
+        </g>
+
+        {/* RIGHT HALF: Towering Primary Forest -> Foreground Meadow -> Unclipped Mountain Stream -> Ranger Outpost & Saplings */}
+        {[
+          { x: 422, y: 292, h: 152, w: 34, delay: '', c: 'var(--sj-near)' },
+          { x: 478, y: 288, h: 186, w: 44, delay: ' art-delay', c: 'var(--sj-panel)' },
+          { x: 538, y: 294, h: 162, w: 38, delay: '', c: 'var(--sj-near)' },
+          { x: 590, y: 298, h: 136, w: 32, delay: ' art-delay', c: 'var(--sj-panel)' },
+        ].map(tree => (
+          <g key={tree.x} transform={`translate(${tree.x} ${tree.y})`}>
+            <g className={`art-sway${tree.delay}`}>
+              <polygon points={`0,-${tree.h} -${tree.w},0 ${tree.w},0`} fill={tree.c} />
+            </g>
+          </g>
+        ))}
+
+        {/* Foreground regenerated meadow drawn BEFORE stream so river carves smoothly without cutoff */}
+        <path d="M290 332Q440 304 640 324V420H242Z" fill="var(--sj-panel)" />
+
+        {/* Mountain stream dividing cleared slope from restored primary forest */}
+        <path d="M354 252Q308 294 270 342T198 420H286Q328 352 374 254Z" fill="var(--sj-water)" />
+        <path
+          d="M364 254Q314 310 242 412"
+          fill="none"
+          stroke="var(--sj-glow)"
+          strokeWidth="2.8"
+          strokeDasharray="10 16"
+          strokeLinecap="round"
+          className="art-dash"
+        />
+
+        {/* Ranger lookout anchored squarely onto forest bank */}
+        <g transform="translate(392 252)">
+          <polygon points="0,34 42,34 42,14 21,-2 0,14" fill="var(--sj-light)" />
+          <polygon points="21,-2 42,14 42,34 21,34" fill="var(--sj-near)" />
+          <rect x="8" y="16" width="8" height="10" fill="var(--sj-sun)" className="art-pulse" />
+        </g>
+
+        {/* Planted saplings with ascending carbon-capture motes */}
+        {[386, 446, 514, 574].map((x, idx) => (
+          <g key={x} transform={`translate(${x} ${368 + (idx % 2) * 14})`}>
+            <polygon points="0,-24 -10,0 10,0" fill="var(--sj-far)" className="art-sway" />
+          </g>
+        ))}
+        <g className="art-smoke" fill="var(--sj-sun)" opacity=".82">
+          <circle cx="404" cy="348" r="2.8" />
+          <circle cx="468" cy="336" r="2.5" />
+          <circle cx="536" cy="344" r="3" />
+        </g>
+        <g className="art-vehicle" stroke="var(--sj-near)" strokeWidth="2" fill="none" strokeLinecap="round">
+          <path d="M352 68q6-6 12 0q6-6 12 0M384 82q5-5 10 0q5-5 10 0" />
+        </g>
+      </g>
+    ),
+  },
+
+  agricultura: {
+    badge: '05 · AGRICULTURA',
+    render: () => (
+      <g className="factor-scene factor-scene-agricultura">
+        <rect width="640" height="420" fill="var(--sj-sky-a)" />
+        <path d="M0 144Q320 124 640 148V420H0Z" fill="var(--sj-sky-b)" />
+        <circle cx="496" cy="74" r="36" fill="var(--sj-sun)" className="art-pulse" />
+
+        <g className="art-vehicle" fill="var(--sj-light)" opacity=".6">
+          <path d="M74 64a14 14 0 0 1 28-4a18 18 0 0 1 34 2a12 12 0 0 1 18 10H74Z" />
+          <path d="M254 46a10 10 0 0 1 20-3a14 14 0 0 1 24 4H254Z" />
+        </g>
+
+        {/* Grounded Ridge & Agricultural Contour Terraces */}
+        <path d="M0 198Q190 166 380 186T640 174V420H0Z" fill="var(--sj-far)" />
+
+        {/* Farmstead Barn, Silo & Masonry-Grounded Greenhouse planted cleanly on flat top pad */}
+        <g transform="translate(88 148)">
+          <rect x="-42" y="12" width="16" height="34" fill="var(--sj-light)" />
+          <path d="M-42 12a8 6 0 0 1 16 0Z" fill="var(--sj-accent)" />
+          <polygon points="-22,46 28,46 28,16 3,-4 -22,16" fill="var(--sj-accent)" />
+          <polygon points="3,-4 28,16 28,46 3,46" fill="var(--sj-near)" />
+          <rect x="-6" y="24" width="16" height="22" fill="var(--sj-light)" />
+        </g>
+        <g transform="translate(362 156)">
+          <rect x="-4" y="28" width="76" height="6" fill="var(--sj-panel)" />
+          <path d="M0 28V12Q34-8 68 12v16Z" fill="var(--sj-glow)" opacity=".86" className="art-pulse" />
+          <rect x="14" y="18" width="12" height="10" fill="var(--sj-mid)" />
+          <rect x="42" y="18" width="12" height="10" fill="var(--sj-mid)" />
+        </g>
+
+        {/* Pasture Terrace (left-center) with Cows & Methane wisps */}
+        <path d="M0 202Q170 232 344 210Q496 194 640 214V420H0Z" fill="var(--sj-mid)" />
+
+        {/* Rice paddy / Efficient drip-irrigation water terrace (right side) */}
+        <path d="M356 226Q488 212 620 228L606 276Q472 288 340 272Z" fill="var(--sj-water)" />
+        <g fill="none" stroke="var(--sj-glow)" strokeLinecap="round">
+          <ellipse cx="484" cy="248" rx="64" ry="12" strokeWidth="1.8" className="art-ripple" />
+          <ellipse cx="484" cy="248" rx="34" ry="6" strokeWidth="1.4" opacity=".8" className="art-ripple art-delay" />
+        </g>
+        <g stroke="var(--sj-sun)" strokeWidth="2" strokeLinecap="round">
+          {[402, 434, 536, 568].map((x, idx) => (
+            <g key={x} transform={`translate(${x} 254)`}>
+              <path d="M0 0v-14" className={`art-sway${idx % 2 ? ' art-delay' : ''}`} />
+            </g>
+          ))}
+        </g>
+
+        {/* Three Minimalist Livestock Cows on Green Pasture (Ganadería · Metano) */}
+        {[
+          { x: 112, y: 244, s: 1.05 },
+          { x: 192, y: 256, s: 0.92 },
+          { x: 266, y: 246, s: 1.0 },
+        ].map((cow, idx) => (
+          <g key={idx} transform={`translate(${cow.x} ${cow.y}) scale(${cow.s})`}>
+            <ellipse cx="-2" cy="16" rx="18" ry="3.5" fill="var(--sj-near)" opacity=".28" />
+            <rect x="-18" y="-12" width="32" height="18" rx="4" fill="var(--sj-light)" />
+            <rect x="-10" y="-10" width="12" height="9" rx="2" fill="var(--sj-near)" />
+            <rect x="12" y="-16" width="10" height="11" rx="3" fill="var(--sj-light)" />
+            <polygon points="12,-16 8,-20 14,-16" fill="var(--sj-sun)" />
+            <rect x="-15" y="6" width="4" height="10" fill="var(--sj-near)" />
+            <rect x="-4" y="6" width="4" height="10" fill="var(--sj-near)" />
+            <rect x="7" y="6" width="4" height="10" fill="var(--sj-near)" />
+          </g>
+        ))}
+        {/* Subtle methane/nitrous emission wisps ascending above cattle & fertilized rows */}
+        <g className="art-smoke" fill="var(--sj-glow)" opacity=".56">
+          <circle cx="118" cy="216" r="4" />
+          <circle cx="196" cy="228" r="3.6" />
+          <circle cx="270" cy="218" r="4" />
+        </g>
+
+        {/* Foreground Cultivated Contour Band & Living Soil Cross-section */}
+        <path d="M0 296Q210 264 416 300T640 288V420H0Z" fill="var(--sj-near)" />
+        <path
+          d="M28 312Q210 284 416 318T618 308"
+          fill="none"
+          stroke="var(--sj-water)"
+          strokeWidth="2.4"
+          strokeDasharray="10 14"
+          strokeLinecap="round"
+          className="art-dash"
+        />
+        <path d="M0 364Q240 340 446 372T640 358V420H0Z" fill="var(--sj-panel)" />
+
+        {/* Graceful Arched Golden Wheat / Crop Stalks (NOT stiff spears!) */}
+        {[58, 122, 186, 250, 326, 404, 480, 558].map((x, idx) => (
+          <g key={x} transform={`translate(${x} ${idx % 2 ? 356 : 344})`}>
+            <g className={`art-sway${idx % 2 ? ' art-delay' : ''}`} fill="none" strokeLinecap="round">
+              <path d="M0 0Q2-20 8-34" stroke="var(--sj-sun)" strokeWidth="2.4" />
+              <ellipse cx="9" cy="-35" rx="6" ry="3" transform="rotate(28 9 -35)" fill="var(--sj-sun)" />
+              <path d="M0-10Q-8-18-12-24" stroke="var(--sj-far)" strokeWidth="2" />
+            </g>
+          </g>
+        ))}
+
+        {/* Subsurface Organic Roots / Living Soil Nutrients */}
+        <g fill="var(--sj-sun)" opacity=".6">
+          <circle cx="104" cy="392" r="2.6" />
+          <circle cx="218" cy="398" r="2.2" />
+          <circle cx="332" cy="388" r="2.5" />
+          <circle cx="452" cy="398" r="2.4" />
+          <circle cx="548" cy="390" r="2.2" />
+        </g>
+      </g>
+    ),
+  },
+}
 
 /**
- * Original vector scenes for the five factors. Every element shares one ground
- * line, one horizon and one scale; nothing floats or is cropped by the viewBox.
+ * Editorial illustrations rendered as lineless minimalist geometric SVGs
+ * inspired by Samurai Jack (flat layered depth planes, sharp silhouettes, zero ink outlines)
+ * with centered rotations and domain-accurate climate factor visual concepts.
  */
 export function FactorIllustration({ factor, title }: Props) {
+  const plate = PLATES[factor] ?? PLATES.energia
   const label = `Ilustración editorial del factor ${title}`
 
-  if (factor === 'energia') return <svg {...common} aria-label={label}>
-    <defs>
-      <linearGradient id="energy-sky" x2="0" y2="1"><stop stopColor="#1b443e" /><stop offset="1" stopColor="#789587" /></linearGradient>
-      <linearGradient id="energy-ground" x2="0" y2="1"><stop stopColor="#3f5e4e" /><stop offset="1" stopColor="#162f29" /></linearGradient>
-      <radialGradient id="energy-sun"><stop stopColor="#f9d996" /><stop offset="1" stopColor="#d6783f" /></radialGradient>
-    </defs>
-
-    <rect width="640" height="420" fill="url(#energy-sky)" />
-    <circle cx="524" cy="84" r="42" fill="url(#energy-sun)" className="art-pulse" />
-    <path d="M0 264q92-50 178-12t162-10q72-24 140 6t160-6v78H0z" fill="#33574a" />
-    <path d="M0 296q118-32 232 2t206-8q88-18 202 10v120H0z" fill="url(#energy-ground)" />
-    <path d="M0 296q118-32 232 2t206-8q88-18 202 10" fill="none" stroke="#78957f" strokeWidth="2" opacity=".55" />
-
-    {/* Town: walls, roofs, doors and windows share the same baseline. */}
-    <g stroke="#102b26" strokeWidth="3">
-      <path d="M44 300v-54h62v54z" fill="#e9dcbd" />
-      <path d="M38 246 75 214l37 32z" fill="#c07a4a" />
-      <rect x="52" y="258" width="10" height="12" fill="#e4b45d" stroke="none" />
-      <rect x="72" y="258" width="10" height="12" fill="#e4b45d" stroke="none" />
-      <rect x="88" y="258" width="10" height="12" fill="#e4b45d" stroke="none" />
-      <rect x="70" y="278" width="14" height="22" fill="#54725e" stroke="none" />
-
-      <path d="M120 300v-84h54v84z" fill="#e9dcbd" />
-      <path d="M118 216h58v8h-58z" fill="#b96d3a" />
-      <g fill="#e4b45d" stroke="none"><rect x="128" y="228" width="10" height="12" /><rect x="146" y="228" width="10" height="12" /><rect x="128" y="250" width="10" height="12" /><rect x="146" y="250" width="10" height="12" /><rect x="128" y="272" width="10" height="12" /><rect x="146" y="272" width="10" height="12" /></g>
-
-      <path d="M186 300v-48h48v48z" fill="#e9dcbd" />
-      <path d="M180 252 210 226l30 26z" fill="#b96d3a" />
-      <rect x="198" y="264" width="12" height="11" fill="#e4b45d" stroke="none" />
-      <rect x="216" y="276" width="12" height="24" fill="#54725e" stroke="none" />
-    </g>
-
-    {/* Transmission line: each pylon is planted on the ground and the cables sag between crossarms. */}
-    <g stroke="#f1e4c8" strokeWidth="2.4" fill="none" opacity=".95">
-      <path d="M266 300 280 232l14 68M262 252h36M268 272h24M280 232v-12" />
-      <path d="M378 300 392 232l14 68M374 252h36M380 272h24M392 232v-12" />
-      <path d="M490 300 504 232l14 68M486 252h36M492 272h24M504 232v-12" />
-    </g>
-    <g stroke="#f1e4c8" strokeWidth="1.3" fill="none" opacity=".62">
-      <path d="M298 252q40 20 76 0M298 272q40 18 76 0M410 252q40 20 76 0M410 272q40 18 76 0M238 250q11 10 24 2" />
-    </g>
-
-    {/* Wind farm on the ridge, with the towers anchored behind the town ground line. */}
-    <g transform="translate(552 158)">
-      <path d="M-3 0v136" stroke="#f1e4c8" strokeWidth="5" />
-      <g className="art-rotor" stroke="#f1e4c8" strokeWidth="4" fill="none">
-        <circle r="36" fill="none" stroke="none" />
-        <path d="M0 0v-36M0 0l31 18M0 0-31 18" />
-      </g>
-      <circle r="4" fill="#f1e4c8" />
-    </g>
-    <g transform="translate(598 190)">
-      <path d="M-2 0v104" stroke="#f1e4c8" strokeWidth="4" />
-      <g className="art-rotor" stroke="#f1e4c8" strokeWidth="3" fill="none">
-        <circle r="28" fill="none" stroke="none" />
-        <path d="M0 0v-28M0 0l24 14M0 0-24 14" />
-      </g>
-      <circle r="3" fill="#f1e4c8" />
-    </g>
-
-    {/* Solar array in the foreground, its frame planted on the field. */}
-    <g transform="translate(348 308)">
-      <ellipse cx="46" cy="88" rx="58" ry="8" fill="#102b26" opacity=".2" />
-      <g fill="#4f7d86" stroke="#102b26" strokeWidth="2">
-        <path d="M0 22 76 2l16 30L16 52z" />
-      </g>
-      <g stroke="#bcd8d6" strokeWidth="1.1" opacity=".8">
-        <path d="M18 18 34 46M35 14 51 42M52 10 68 38M69 6 85 34M9 24 25 52M58 36 74 64" />
-      </g>
-      <g stroke="#102b26" strokeWidth="3.2">
-        <path d="M12 52v34M88 34v34M26 56v30M102 38v30" />
-      </g>
-    </g>
-
-    <g stroke="#6f8f78" strokeWidth="1.5" fill="none" opacity=".5">
-      <path d="M0 336q160-14 320 0t320-4M0 368q160-12 320 0t320-2M0 402q160-10 320 0t320-2" />
-    </g>
-  </svg>
-
-  if (factor === 'industria') return <svg {...common} aria-label={label}>
-    <defs>
-      <linearGradient id="industry-bg" x2="1" y2="1"><stop stopColor="#e9dfc9" /><stop offset="1" stopColor="#c9ba98" /></linearGradient>
-      <pattern id="industry-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0v28" fill="none" stroke="#8d7a58" strokeWidth=".6" opacity=".3" /></pattern>
-    </defs>
-    <rect width="640" height="420" fill="url(#industry-bg)" />
-    <rect width="640" height="420" fill="url(#industry-grid)" />
-    <path d="M0 340h640v80H0z" fill="#b9ab8c" />
-    <path d="M0 340h640" stroke="#7d6a49" strokeWidth="2" />
-
-    {/* Main factory: sawtooth roof, chimney integrated into the roof line, aligned openings. */}
-    <g stroke="#213f36" strokeWidth="3">
-      <path d="M54 340V218l46-34 46 34 46-34 46 34 46-34 46 34v122z" fill="#5d786b" />
-      <path d="M296 218V112h30v106z" fill="#9f4735" />
-      <path d="M291 104h40v8h-40z" fill="#7f3a2c" />
-      <g fill="#e7c06b" stroke="none">
-        <rect x="72" y="240" width="14" height="18" /><rect x="100" y="240" width="14" height="18" /><rect x="128" y="240" width="14" height="18" /><rect x="156" y="240" width="14" height="18" /><rect x="184" y="240" width="14" height="18" /><rect x="212" y="240" width="14" height="18" /><rect x="240" y="240" width="14" height="18" />
-        <rect x="72" y="270" width="14" height="18" /><rect x="100" y="270" width="14" height="18" /><rect x="128" y="270" width="14" height="18" /><rect x="156" y="270" width="14" height="18" /><rect x="184" y="270" width="14" height="18" /><rect x="212" y="270" width="14" height="18" /><rect x="240" y="270" width="14" height="18" />
-      </g>
-      <rect x="96" y="298" width="42" height="42" fill="#25443b" />
-      <rect x="220" y="306" width="34" height="34" fill="#25443b" />
-      <path d="M104 298v42M130 298v42" stroke="#c7b58c" strokeWidth="1.4" />
-    </g>
-
-    <g transform="translate(311 104)">
-      <g className="art-smoke" fill="#f4ead2" opacity=".72">
-        <circle cx="0" cy="-12" r="14" /><circle cx="16" cy="-26" r="11" /><circle cx="-12" cy="-34" r="9" /><circle cx="6" cy="-46" r="7" />
-      </g>
-    </g>
-
-    {/* Secondary workshop, flat roof, windows aligned to the facade. */}
-    <g stroke="#213f36" strokeWidth="3">
-      <path d="M356 340V248h120v92z" fill="#839087" />
-      <path d="M350 240h132v8H350z" fill="#25443b" />
-      <g fill="#e7c06b" stroke="none">
-        <rect x="370" y="262" width="14" height="18" /><rect x="394" y="262" width="14" height="18" /><rect x="418" y="262" width="14" height="18" /><rect x="442" y="262" width="14" height="18" />
-        <rect x="370" y="290" width="14" height="18" /><rect x="394" y="290" width="14" height="18" /><rect x="418" y="290" width="14" height="18" />
-      </g>
-      <rect x="442" y="290" width="26" height="50" fill="#25443b" />
-    </g>
-
-    {/* Storage silo and the pipe that physically connects it to the workshop. */}
-    <g stroke="#213f36" strokeWidth="3">
-      <path d="M496 340V214a30 18 0 0 1 60 0v126z" fill="#d4c5a1" />
-      <ellipse cx="526" cy="214" rx="30" ry="18" fill="#e6d9b8" />
-      <path d="M496 252h60M496 294h60" stroke="#a08c66" strokeWidth="2" />
-      <path d="M476 302h20v14h-20z" fill="#9a8a68" />
-      <path d="M476 322h20v12h-20z" fill="#9a8a68" />
-    </g>
-
-    {/* Contrails and reuse loop are signals, not objects: they sit in the sky. */}
-    <g transform="translate(548 118)" fill="none" stroke="#9b5f3d" strokeWidth="3">
-      <path d="M0 0a48 48 0 1 1-2 96" strokeDasharray="8 9" className="art-dash" />
-      <path d="m-10 86 9 13 11-11" />
-    </g>
-
-    <g fill="#8d7a58" opacity=".8">
-      <rect x="20" y="310" width="26" height="30" /><rect x="50" y="300" width="22" height="40" /><rect x="24" y="304" width="18" height="6" fill="#c7b58c" /><rect x="54" y="294" width="14" height="6" fill="#c7b58c" />
-    </g>
-    <g stroke="#7d6a49" strokeWidth="1.5" opacity=".6"><path d="M0 372h640M0 400h640" /></g>
-  </svg>
-
-  if (factor === 'transporte') return <svg {...common} aria-label={label}>
-    <defs>
-      <linearGradient id="transport-sky" x2="0" y2="1"><stop stopColor="#b9d8d3" /><stop offset="1" stopColor="#e9e0c7" /></linearGradient>
-      <linearGradient id="transport-road" x2="0" y2="1"><stop stopColor="#4e5c57" /><stop offset="1" stopColor="#283b36" /></linearGradient>
-    </defs>
-    <rect width="640" height="420" fill="url(#transport-sky)" />
-    <circle cx="524" cy="70" r="34" fill="#e7b65d" />
-    <path d="M0 236 68 190l54 18 72-64 62 56 66-27 82 51 66-29 110 39v56H0z" fill="#7e9b78" />
-
-    {/* Town behind the sidewalk, with windows and roofs on the same baseline. */}
-    <g stroke="#315448" strokeWidth="2.5">
-      <path d="M44 252v-42h46v42z" fill="#e9e0c9" /><path d="M38 210 67 188l29 22z" fill="#b8704a" />
-      <rect x="52" y="218" width="8" height="9" fill="#d9b66c" stroke="none" /><rect x="68" y="218" width="8" height="9" fill="#d9b66c" stroke="none" /><rect x="60" y="234" width="10" height="18" fill="#55725f" stroke="none" />
-      <path d="M104 252v-62h50v62z" fill="#e9e0c9" /><path d="M100 190h58v7h-58z" fill="#b8704a" />
-      <rect x="112" y="202" width="10" height="11" fill="#d9b66c" stroke="none" /><rect x="130" y="202" width="10" height="11" fill="#d9b66c" stroke="none" /><rect x="112" y="222" width="10" height="11" fill="#d9b66c" stroke="none" /><rect x="130" y="222" width="10" height="11" fill="#d9b66c" stroke="none" />
-      <path d="M174 252v-34h38v34z" fill="#e9e0c9" /><path d="M168 218 193 198l25 20z" fill="#b8704a" /><rect x="184" y="226" width="8" height="9" fill="#d9b66c" stroke="none" />
-    </g>
-
-    <rect y="252" width="640" height="48" fill="#d8cfb5" />
-    <path d="M0 252h640M0 298h640" stroke="#a99a7c" strokeWidth="2" />
-    <path d="M0 300h640v120H0z" fill="url(#transport-road)" />
-    <g stroke="#7f8f7e" strokeWidth="1.5" opacity=".5"><path d="M0 330h640M0 370h640M0 408h640" /></g>
-
-    {/* Crosswalk and bike lane, both on the road surface. */}
-    <g fill="#e9dfc9" opacity=".72">
-      <path d="M18 304h9l-6 110h-9zM38 304h9l-6 110h-9zM58 304h9l-6 110h-9z" />
-    </g>
-    <g stroke="#c9d9c0" strokeWidth="2" strokeDasharray="12 12" opacity=".7"><path d="M0 412h640" /></g>
-
-    {/* Utility pole: base on the sidewalk, cables connected across the street. */}
-    <g stroke="#24483e" strokeWidth="3" fill="none">
-      <path d="M300 252V158M282 170h36M286 182h28" />
-      <path d="M282 170q-84 20-170 6M318 170q92 22 196 4" opacity=".65" strokeWidth="1.6" />
-      <circle cx="282" cy="168" r="3" fill="#24483e" /><circle cx="318" cy="168" r="3" fill="#24483e" />
-    </g>
-
-    {/* Bus in the far lane, wheels resting on the asphalt. */}
-    <g transform="translate(330 286)">
-      <path d="M0 20q0-20 20-20h146q20 0 20 20v46H0z" fill="#d8a94f" stroke="#1f3a33" strokeWidth="3" />
-      <rect x="14" y="10" width="30" height="24" rx="2" fill="#bcd8d1" /><rect x="52" y="10" width="30" height="24" rx="2" fill="#bcd8d1" /><rect x="90" y="10" width="30" height="24" rx="2" fill="#bcd8d1" /><rect x="128" y="10" width="24" height="24" rx="2" fill="#bcd8d1" />
-      <rect x="160" y="10" width="20" height="50" fill="#a3c3ba" />
-      <path d="M8 44h172" stroke="#1f3a33" strokeWidth="2" />
-      <circle cx="38" cy="66" r="13" fill="#1c342e" /><circle cx="158" cy="66" r="13" fill="#1c342e" />
-      <circle cx="38" cy="66" r="5" fill="#d8cfb5" /><circle cx="158" cy="66" r="5" fill="#d8cfb5" />
-    </g>
-
-    {/* Car in the near lane, smaller than the bus and resting on the road. */}
-    <g transform="translate(108 340)">
-      <path d="M0 36q0-13 13-15l20-3 14-20h62l17 20 22 4q10 2 10 14v16H0z" fill="#5a8891" stroke="#1f3a33" strokeWidth="3" />
-      <path d="M49 20h20v18H40zM77 20h22l15 18H77z" fill="#c4ded8" />
-      <path d="M42 38h102" stroke="#1f3a33" strokeWidth="2" />
-      <circle cx="32" cy="52" r="13" fill="#1c342e" /><circle cx="128" cy="52" r="13" fill="#1c342e" />
-      <circle cx="32" cy="52" r="5" fill="#d8cfb5" /><circle cx="128" cy="52" r="5" fill="#d8cfb5" />
-    </g>
-
-    {/* Bicycle and rider, with both wheels on the near lane. */}
-    <g transform="translate(536 352)" stroke="#24483e" fill="none" strokeWidth="4">
-      <circle cx="0" cy="42" r="18" /><circle cx="64" cy="42" r="18" />
-      <path d="M0 42 21 14h26l17 28M21 14l14 28M35 42h29M47 14l8-11h15" />
-      <circle cx="55" cy="-10" r="8" fill="#24483e" stroke="none" />
-      <path d="M55 0 50 20M52 8 72 16M50 20 42 34M50 20l14 12" strokeWidth="3" />
-      <path d="M70 14l7-5" strokeWidth="3" />
-    </g>
-
-    {/* Pedestrian on the sidewalk, feet on the pavement. */}
-    <g transform="translate(212 252)" stroke="#24483e" fill="none" strokeWidth="3">
-      <circle cx="0" cy="-40" r="7" fill="#24483e" stroke="none" />
-      <path d="M0-32v17M0-22-9-10M0-22l10-12M0-15l-8 15M0-15l9 15" />
-    </g>
-
-    <g stroke="#315448" strokeWidth="2.5">
-      <path d="M588 252v-38m0 0-17-16m17 16 16-17" /><circle cx="588" cy="208" r="9" fill="#4f7d54" />
-      <path d="M614 252v-30m0 0-13-13m13 13 13-13" /><circle cx="614" cy="214" r="7" fill="#5f8a5e" />
-    </g>
-  </svg>
-
-  if (factor === 'bosques') return <svg {...common} aria-label={label}>
-    <defs>
-      <linearGradient id="forest-sky" x2="0" y2="1"><stop stopColor="#e2ead2" /><stop offset="1" stopColor="#9fb78f" /></linearGradient>
-      <pattern id="forest-soil" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="5" cy="7" r="1.3" fill="#6f5436" /><circle cx="14" cy="13" r="1" fill="#8b6842" /></pattern>
-    </defs>
-    <rect width="640" height="420" fill="url(#forest-sky)" />
-    <circle cx="516" cy="64" r="30" fill="#e6b95f" opacity=".9" />
-    <g stroke="#527a5a" strokeWidth="2" fill="none" opacity=".6"><path d="M420 58q7-7 14 0M444 70q7-7 14 0M86 84q6-6 12 0" /></g>
-    <path d="M0 244q88-48 170-8t150-14q86-38 150 6t170-6v62H0z" fill="#7a9a70" />
-    <path d="M0 284q96-34 180 2t168-12q82-30 144 8t148-4v42H0z" fill="#557c53" />
-    <path d="M0 320h640v100H0z" fill="#7b5f3d" />
-    <path d="M0 320h640v20H0z" fill="#3c633f" />
-    <rect y="340" width="640" height="80" fill="url(#forest-soil)" opacity=".55" />
-    <path d="M0 340h640M0 372h640M0 402h640" stroke="#5d462c" strokeWidth="1.5" opacity=".55" />
-
-    {/* Mushrooms on the forest floor, rooted at the surface line. */}
-    <g transform="translate(204 320)" stroke="#7a5c3c" strokeWidth="1.6">
-      <path d="M-11 0q0-9 11-9t11 9z" fill="#e2c88f" />
-      <path d="M0-9v9" fill="none" />
-    </g>
-    <g transform="translate(224 323)" stroke="#7a5c3c" strokeWidth="1.2">
-      <path d="M-7 0q0-6 7-6t7 6z" fill="#d5b97d" />
-      <path d="M0-6v6" fill="none" />
-    </g>
-
-    {/* Three trees rooted at the surface line, with visible roots entering the soil. */}
-    <g>
-      <path d="M150 322V196" stroke="#654932" strokeWidth="15" />
-      <path d="M150 322q-14 6-24 18m24-18q14 6 24 16M143 320q-6 22-2 38m9-38q8 20 6 36m-4-36v42" stroke="#4b3522" strokeWidth="3" fill="none" />
-      <g fill="#22624b"><circle cx="150" cy="160" r="52" /><circle cx="111" cy="181" r="33" /><circle cx="190" cy="178" r="31" /><circle cx="150" cy="124" r="30" /></g>
-      <g fill="#2f7556"><circle cx="128" cy="150" r="20" /><circle cx="172" cy="164" r="18" /></g>
-    </g>
-    <g>
-      <path d="M330 322V208" stroke="#6c4d33" strokeWidth="12" />
-      <path d="M330 322q-12 4-20 16m20-16q12 4 20 14M324 320q-5 18-1 32m7-32q6 16 4 30" stroke="#4b3522" strokeWidth="2.8" fill="none" />
-      <g fill="#1f5e49"><circle cx="330" cy="180" r="42" /><circle cx="299" cy="196" r="26" /><circle cx="361" cy="194" r="27" /><circle cx="330" cy="148" r="24" /></g>
-      <g fill="#3c815d"><circle cx="314" cy="176" r="16" /><circle cx="350" cy="188" r="14" /></g>
-    </g>
-    <g>
-      <path d="M472 322V226" stroke="#654932" strokeWidth="9" />
-      <path d="M472 322q-9 4-15 14m15-14q10 4 16 12M468 320q-4 15-1 26m7-26q5 14 3 25" stroke="#4b3522" strokeWidth="2.4" fill="none" />
-      <g fill="#2a6c50"><circle cx="472" cy="202" r="33" /><circle cx="447" cy="214" r="21" /><circle cx="497" cy="213" r="21" /></g>
-      <g fill="#468b61"><circle cx="461" cy="196" r="13" /></g>
-    </g>
-
-    {/* Sapling and undergrowth sit on the same terrain. */}
-    <g transform="translate(238 322)">
-      <path d="M0 0v-38" stroke="#5d452c" strokeWidth="4" />
-      <path d="M0-24q-13-12-18 2 10 5 18 2M0-30q12-13 18 1-10 6-18 3" fill="#4a8b5d" className="art-sway" />
-    </g>
-    <g fill="#3f7d58"><ellipse cx="86" cy="318" rx="26" ry="12" /><ellipse cx="396" cy="320" rx="22" ry="10" /><ellipse cx="548" cy="318" rx="27" ry="12" /></g>
-    <g fill="#e9c36b"><circle cx="72" cy="314" r="3.4" /><circle cx="412" cy="314" r="3" /><circle cx="562" cy="312" r="3.2" /><circle cx="208" cy="318" r="2.6" /></g>
-
-    {/* Soil life: mycelium and roots remain below the surface. */}
-    <g stroke="#e2c88f" strokeWidth="1.4" fill="none" opacity=".45">
-      <path d="M132 352q36 14 62 4t58 12M92 386q42-12 76 2t84-4M352 360q34 10 60-2t70 10" />
-    </g>
-    <g fill="#e6c16a"><circle cx="120" cy="374" r="3" /><circle cx="196" cy="366" r="2.5" /><circle cx="368" cy="384" r="3" /><circle cx="512" cy="360" r="2.4" /><circle cx="286" cy="394" r="2.6" /></g>
-    <g stroke="#6b5134" strokeWidth="2" fill="none" opacity=".8"><path d="M96 402q30-10 62 0M420 400q34-10 66 0M250 410q30-8 60 0" /></g>
-  </svg>
-
-  return <svg {...common} aria-label={label}>
-    <defs>
-      <linearGradient id="farm-sky" x2="0" y2="1"><stop stopColor="#cfe3dc" /><stop offset="1" stopColor="#f0e3bf" /></linearGradient>
-      <linearGradient id="farm-field" x2="0" y2="1"><stop stopColor="#b79c63" /><stop offset="1" stopColor="#d3b678" /></linearGradient>
-    </defs>
-    <rect width="640" height="420" fill="url(#farm-sky)" />
-    <circle cx="520" cy="66" r="32" fill="#e9b95e" />
-    <path d="M0 190 88 146l61 30 79-62 69 62 72-34 76 52 83-40 112 46v58H0z" fill="#9bb189" />
-    <path d="M0 232h640v188H0z" fill="url(#farm-field)" />
-
-    {/* Perspective rows converge on a single vanishing point. */}
-    <g stroke="#8a744a" strokeWidth="2" opacity=".55" fill="none">
-      <path d="M320 232 0 420M320 232 80 420M320 232 160 420M320 232 240 420M320 232 320 420M320 232 400 420M320 232 480 420M320 232 560 420M320 232 640 420" />
-      <path d="M0 274q320-14 640 0M0 310q320-16 640 0M0 362q320-18 640 0M0 410q320-22 640 0" />
-    </g>
-
-    {/* Farmhouse: roof, walls, door and windows aligned to one facade. */}
-    <g transform="translate(54 214)" stroke="#6b4330" strokeWidth="3">
-      <path d="M0 52V16L32 0l32 16v36z" fill="#e9dcb8" />
-      <path d="M-8 18 32-8l40 26z" fill="#b96645" />
-      <rect x="12" y="24" width="12" height="11" fill="#7fa39a" stroke="none" />
-      <rect x="42" y="24" width="12" height="11" fill="#7fa39a" stroke="none" />
-      <rect x="27" y="36" width="14" height="16" fill="#5c7b58" stroke="none" />
-    </g>
-
-    {/* Greenhouse on the right, its frame and legs touching the ground. */}
-    <g transform="translate(430 240)" stroke="#4e7380" strokeWidth="3" fill="none">
-      <path d="M0 60V28Q36-8 72 28v32z" fill="#d7e8df" fillOpacity=".55" />
-      <path d="M0 60h72M0 28h72M18 60V12M36 60V4M54 60V12M0 28h72" opacity=".8" />
-      <path d="M12 60V40h14v20" fill="#cfe0d6" />
-    </g>
-
-    {/* Crop plants follow the row lines, each anchored in the soil. */}
-    <g fill="#5b8b4e">
-      <g transform="translate(168 330)"><g className="art-sway"><path d="M0 0v-26m0 16-9-9m9 4 10-10m-10 19-8-8m8 3 9-9" stroke="#4d7842" strokeWidth="3" fill="none" /></g></g>
-      <g transform="translate(226 366)"><g className="art-sway art-delay"><path d="M0 0v-30m0 18-10-10m10 4 11-11m-11 21-9-9m9 4 10-10" stroke="#4d7842" strokeWidth="3" fill="none" /></g></g>
-      <g transform="translate(300 394)"><g className="art-sway"><path d="M0 0v-32m0 18-11-11m11 4 12-12m-12 22-10-9m10 4 11-11" stroke="#4d7842" strokeWidth="3" fill="none" /></g></g>
-      <g transform="translate(492 392)"><g className="art-sway art-delay"><path d="M0 0v-30m0 17-10-10m10 4 11-11m-11 20-9-9m9 4 10-10" stroke="#4d7842" strokeWidth="3" fill="none" /></g></g>
-      <g transform="translate(390 344) scale(.7)"><g className="art-sway"><path d="M0 0v-24m0 15-9-9m9 4 10-10m-10 18-8-8m8 3 9-9" stroke="#4d7842" strokeWidth="3" fill="none" /></g></g>
-      <g transform="translate(556 370) scale(.9)"><g className="art-sway art-delay"><path d="M0 0v-28m0 17-9-9m9 4 10-10m-10 20-8-8m8 3 9-9" stroke="#4d7842" strokeWidth="3" fill="none" /></g></g>
-    </g>
-
-    {/* Sheep, hooves resting on their field row and scaled to the farmhouse. */}
-    <g transform="translate(360 344) scale(.42)" fill="#314f3e">
-      <ellipse cx="0" cy="0" rx="25" ry="14" /><circle cx="24" cy="-9" r="8" />
-      <path d="M-8 12v16m16-16v16m-24-16v18m32-18v18" stroke="#314f3e" strokeWidth="4" />
-    </g>
-    <g transform="translate(410 372) scale(.38)" fill="#314f3e">
-      <ellipse cx="0" cy="0" rx="19" ry="11" /><circle cx="18" cy="-8" r="7" />
-      <path d="M-6 9v13m12-13v13m-18-13v15m24-15v15" stroke="#314f3e" strokeWidth="3" />
-    </g>
-
-    {/* Pond at the lower edge with a calm surface and a few reeds. */}
-    <ellipse cx="78" cy="398" rx="72" ry="17" fill="#6f9ba0" opacity=".8" />
-    <ellipse cx="62" cy="394" rx="34" ry="5" fill="#c8e0dc" opacity=".75" />
-    <path d="M18 398q60 7 120 0" fill="none" stroke="#4e7a80" strokeWidth="1.6" opacity=".45" />
-    <g stroke="#4d7842" strokeWidth="2.4" fill="none"><path d="M20 394v-16m0 8-6-6m6 2 6-6M132 400v-13m0 7-5-5m5 2 5-5" /></g>
-
-    <g stroke="#8a744a" strokeWidth="1.5" opacity=".5"><path d="M0 402h640" /></g>
-  </svg>
+  return <figure className="factor-plate">
+    <svg className="factor-illustration" viewBox="0 0 640 420" role="img" aria-label={label}>
+      {plate.render()}
+    </svg>
+    <span className="factor-plate-badge" aria-hidden="true">{plate.badge}</span>
+  </figure>
 }

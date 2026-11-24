@@ -80,4 +80,5 @@ export const Icon = {
   wheat: <svg viewBox="0 0 24 24"><path d="M12 21V8M12 8c-2-1-3-3-3-5 2 0 3 2 3 5Zm0 0c2-1 3-3 3-5-2 0-3 2-3 5Zm0 5c-2-1-4-2-4-5 2 0 4 2 4 5Zm0 0c2-1 4-2 4-5-2 0-4 2-4 5Z" /></svg>,
   ruler: <svg viewBox="0 0 24 24"><path d="M3 16 16 3l5 5L8 21l-5-5ZM7 12l2 2M10 9l2 2M13 6l2 2" /></svg>,
   route: <svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="6" r="2.5" /><path d="M8 17c6 0 2-10 8-10" /></svg>,
+  check: <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>,
 }

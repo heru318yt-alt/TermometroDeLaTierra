@@ -102,14 +102,14 @@ export const narrativePhases: NarrativePhase[] = [
     source: 'https://www.iea.org/energy-system/transport', sourceLabel: 'IEA · Transporte',
   },
   {
-    start: 2010, end: 2019, label: '2010–2019', focus: 'Uso del suelo y producción de alimentos', factor: 'bosques',
-    text: 'La atención se amplió hacia los bosques, la agricultura y las cadenas de suministro. La deforestación y la ganadería mostraron que el clima también se juega en el territorio y en la alimentación.',
+    start: 2010, end: 2019, label: '2010–2019', focus: 'Bosques y cambio de uso del suelo', factor: 'bosques',
+    text: 'La atención se amplió hacia los bosques, el territorio y las cadenas de suministro. La deforestación mostró que conservar el carbono almacenado en árboles y suelos es irremplazable a corto plazo.',
     source: 'https://www.fao.org/forest-resources-assessment/2020/en/', sourceLabel: 'FAO · Evaluación forestal mundial 2020',
   },
   {
-    start: 2020, end: 2025, label: '2020–2025', focus: 'Calentamiento reciente y respuesta', factor: 'energia',
-    text: 'La década más cálida registrada coincidió con una expansión récord de energías renovables, pero también con emisiones globales todavía altas. La brecha entre lo prometido y lo implementado sigue siendo el centro del debate.',
-    source: 'https://wmo.int/news/media-centre/2024-warmest-year-record', sourceLabel: 'OMM · 2024, el año más cálido',
+    start: 2020, end: 2025, label: '2020–2025', focus: 'Agricultura, alimentación y respuesta climática', factor: 'agricultura',
+    text: 'En la década más cálida registrada, alimentar a ocho mil millones de personas puso en primer plano el metano, el óxido nitroso, la salud del suelo y la adaptación frente a sequías y lluvias extremas.',
+    source: 'https://www.fao.org/agrifood-economics/areas-of-work/agrifood-systems/en/', sourceLabel: 'FAO · Sistemas agroalimentarios',
   },
 ]
 

@@ -42,4 +42,14 @@ describe('Progreso narrativo de las etapas', () => {
     expect(isEpochUnlocked('energia')).toBe(true)
     expect(isEpochUnlocked('industria')).toBe(false)
   })
+
+  it('mantiene orden canónico aunque se completen fuera de orden y sincroniza al limpiar otra pestaña', () => {
+    completeEpoch('bosques')
+    completeEpoch('energia')
+    expect(getCompletedEpochs()).toEqual(['energia', 'bosques'])
+
+    window.localStorage.clear()
+    window.dispatchEvent(new StorageEvent('storage', { key: null }))
+    expect(getCompletedEpochs()).toEqual([])
+  })
 })

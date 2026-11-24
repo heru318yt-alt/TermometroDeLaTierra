@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { anomalyToFrequency, playAnomalyTone, stopAnomalyTone } from '../audio/sonify'
 import { historicalPeriods } from '../history/catalog'
 import { useExplorer } from './ExplorerContext'
 import { anomalyColor, colorStops, formatAnomaly } from './model'
@@ -6,11 +7,31 @@ import { InteractiveGlobe } from './InteractiveGlobe'
 
 /** The sphere deliberately uses a single global anomaly, never a country-level heat map. */
 export function WorldClimateVisualizer() {
-  const { anomaly, label, mode, data, date } = useExplorer()
+  const { anomaly, label, mode, data, date, summary } = useExplorer()
   const period = historicalPeriods.find(item => date.year >= item.start && date.year <= item.end)
   const [inspected, setInspected] = useState(false)
+  const [listeningHz, setListeningHz] = useState<number | null>(null)
+  const toneTimer = useRef(0)
+
+  useEffect(() => () => {
+    window.clearTimeout(toneTimer.current)
+    stopAnomalyTone()
+  }, [])
+
+  const baselineMean = summary.thresholds.baseline.mean
+  const preindustrial = anomaly !== null && baselineMean !== null ? anomaly - baselineMean : null
   const color = anomalyColor(anomaly)
   const markerPosition = anomaly === null ? 50 : (Math.max(-1, Math.min(2, anomaly)) + 1) / 3 * 100
+
+  function handleListen() {
+    if (anomaly === null) return
+    const ok = playAnomalyTone(anomaly)
+    if (!ok) return
+    const hz = anomalyToFrequency(anomaly)
+    setListeningHz(hz)
+    window.clearTimeout(toneTimer.current)
+    toneTimer.current = window.setTimeout(() => setListeningHz(null), 500)
+  }
 
   return <section className="world-visualizer" aria-labelledby="world-title">
     <div className="world-topline">
@@ -24,6 +45,21 @@ export function WorldClimateVisualizer() {
         <strong data-testid="world-anomaly">{formatAnomaly(anomaly)}</strong>
         <span className="world-reading-label">Anomalía global · 1951–1980</span>
         <span className="world-reading-unit">°C · NASA GISTEMP v4</span>
+        <div className="world-reading-extra">
+          <span className="world-reading-preindustrial" data-testid="world-preindustrial">
+            {preindustrial !== null ? `≈ ${formatAnomaly(preindustrial)} sobre 1880–1900` : 'Equivalencia 1880–1900: sin dato'}
+          </span>
+          <button
+            type="button"
+            className={`world-listen-btn${listeningHz !== null ? ' is-sounding' : ''}`}
+            data-sfx="none"
+            disabled={anomaly === null}
+            onClick={handleListen}
+            aria-label={anomaly === null ? 'Escuchar anomalía sonora (sin dato disponible)' : `Escuchar anomalía sonora (${anomalyToFrequency(anomaly)} Hz)`}
+          >
+            {listeningHz !== null ? `♪ Sonando · ${listeningHz} Hz` : '♪ Escuchar anomalía'}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -33,11 +69,7 @@ export function WorldClimateVisualizer() {
         <strong>{date.year}</strong>
         <span>{period ? `${period.label} · ${period.name}` : 'Fuera de los períodos narrativos'}</span>
       </div>
-      <div className="map-coordinate map-coordinate-n">90° N</div>
-      <div className="map-coordinate map-coordinate-s">90° S</div>
-      <div className="map-coordinate map-coordinate-w">180° O</div>
-      <div className="map-coordinate map-coordinate-e">180° E</div>
-      <InteractiveGlobe color={color} label={label} anomaly={formatAnomaly(anomaly)} onInteract={() => setInspected(true)} />
+      <InteractiveGlobe color={color} label={label} anomaly={formatAnomaly(anomaly)} showCoordinates onInteract={() => setInspected(true)} />
     </div>
 
     {inspected && <p className="globe-inspected" role="status">
@@ -62,14 +94,16 @@ export function WorldClimateVisualizer() {
       <p className="legend-reading">La escala es fija de −1 °C a +2 °C. Los valores extremos se saturan en los colores de los bordes; el marcador muestra la lectura exacta.</p>
     </div>
 
-    <details className="world-info" data-sfx="info">
-      <summary>¿Qué representa esta esfera?</summary>
+    <details className="world-info">
+      <summary data-sfx="info">¿Qué representa esta esfera?</summary>
       <dl>
         <div><dt>Qué representa</dt><dd>La anomalía media global de la temperatura de la superficie, calculada por NASA GISTEMP.</dd></div>
         <div><dt>Año o período</dt><dd>{label}</dd></div>
-        <div><dt>Valor</dt><dd>{formatAnomaly(anomaly)}</dd></div>
+        <div><dt>Valor (ref. 1951–1980)</dt><dd>{formatAnomaly(anomaly)}</dd></div>
+        <div><dt>Aprox. sobre 1880–1900</dt><dd>{preindustrial !== null ? formatAnomaly(preindustrial) : 'Sin dato disponible'}</dd></div>
         <div><dt>Unidad</dt><dd>Grados Celsius de anomalía (°C), no temperatura absoluta.</dd></div>
-        <div><dt>Referencia</dt><dd>Promedio del período 1951–1980.</dd></div>
+        <div><dt>Sonificación Web Audio</dt><dd>{anomaly !== null ? `Mapeo directo (−1 °C a +2 °C → 220–660 Hz): ${anomalyToFrequency(anomaly)} Hz.` : 'Sin dato para sonificar en esta selección.'}</dd></div>
+        <div><dt>Referencia</dt><dd>Promedio del período 1951–1980 y aproximación preindustrial con J-D de 1880–1900.</dd></div>
         <div><dt>Explicación breve</dt><dd>El color del océano resume una sola señal planetaria. Los continentes son una referencia geográfica: el mapa no colorea países ni compara su temperatura.</dd></div>
       </dl>
       <small>Última fecha de la serie: {data.lastDate}. Fuente: NASA GISTEMP v4.</small>
@@ -77,6 +111,6 @@ export function WorldClimateVisualizer() {
 
     <p className="world-caption">El color de todo el océano representa una única <strong>anomalía GLOBAL</strong> respecto a 1951–1980. Los continentes son una referencia visual, no un mapa de temperaturas por país.</p>
     {anomaly === null && <p className="notice" role="status">No hay {mode === 'annual' ? 'un J-D completo' : 'un dato mensual'} para esta selección. El gris indica ausencia de datos, no cero.</p>}
-    <small className="world-credit">Contornos: <a href="https://www.naturalearthdata.com/about/terms-of-use/">Natural Earth · dominio público</a>. Esfera ilustrativa, no cartografía analítica.</small>
+    <small className="world-credit">Contornos: <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">Natural Earth · dominio público</a>. Esfera ilustrativa, no cartografía analítica.</small>
   </section>
 }

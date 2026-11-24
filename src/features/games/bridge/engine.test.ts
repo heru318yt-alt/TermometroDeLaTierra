@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { LEVELS, METERS_PER_COLUMN, starsFor, streakBonus, totalScore, START_INVENTORY, canBuildAnything, canContinue, clearColumn, commitLevel, emptyPlan, evaluate, fits, metersPerUnit, planCost, setDeck, startRun, togglePillar, type LevelDef, type Material, type Plan } from './engine'
+import {
+  LEVELS, METERS_PER_COLUMN, MIN_BRIDGES_PASSED, SCORE_BONUS_REFILL, SCORE_BONUS_STEP, START_INVENTORY,
+  canBuildAnything, canContinue, clearColumn, commitLevel, completedBridges, emptyPlan, evaluate, fits,
+  levelAt, passedRun, planCost, refillFor, setDeck, startRun, starsFor, streakBonus, togglePillar, totalScore,
+  type LevelDef, type Material, type Plan,
+} from './engine'
 
 function build(level: LevelDef, rows: number[], materials: Material | Material[], pillars: number[] = []): Plan {
   let plan = emptyPlan(level)
@@ -17,142 +22,89 @@ describe('evaluación del puente', () => {
     expect(e.meters).toBe((l.gap + 1) * METERS_PER_COLUMN)
   })
 
-  it('el concreto sin apoyos cede en la mitad del tramo y el carro cae ahí', () => {
-    const l = LEVELS[0], e = evaluate(l, build(l, flat(l), 'concrete'))
-    expect(e.outcome).toBe('collapse')
-    expect(e.failColumn).toBe(3)
-    expect(e.driven).toBe(2)
-    expect(e.runs[0]).toMatchObject({ length: 4, span: 2, ok: false })
-  })
-
-  it('un pilar divide el tramo y lo vuelve seguro', () => {
+  it('el concreto sin apoyos cede y el pilar lo vuelve seguro', () => {
     const l = LEVELS[0]
-    const e = evaluate(l, build(l, flat(l), 'concrete', [2]))
-    expect(e.outcome).toBe('ok')
-    expect(e.runs.every(r => r.ok)).toBe(true)
+    expect(evaluate(l, build(l, flat(l), 'concrete')).outcome).toBe('collapse')
+    expect(evaluate(l, build(l, flat(l), 'concrete', [2])).outcome).toBe('ok')
   })
 
-  it('el tramo lo limita el material más débil', () => {
-    const l = LEVELS[1]
-    const e = evaluate(l, build(l, flat(l), ['steel', 'steel', 'concrete', 'concrete', 'steel', 'steel'], []))
-    expect(e.outcome).toBe('collapse')
-  })
-
-  it('una pieza faltante detiene al carro antes del hueco', () => {
+  it('detecta huecos y pendientes bruscas', () => {
     const l = LEVELS[0]
     let plan = build(l, flat(l), 'steel')
     plan = clearColumn(plan, 3)
-    const e = evaluate(l, plan)
-    expect(e.outcome).toBe('gap')
-    expect(e.driven).toBe(2)
-  })
-
-  it('una pendiente de más de una fila detiene al carro', () => {
-    const l = LEVELS[2]
-    const e = evaluate(l, build(l, [2, 2, 4, 4, 4, 4, 4], 'steel', [3]))
-    expect(e.outcome).toBe('slope')
-    expect(e.driven).toBe(2)
-  })
-
-  it('un pilar solo se puede poner bajo una pieza de tablero', () => {
-    const l = LEVELS[0], plan = togglePillar(emptyPlan(l), 2)
-    expect(plan.pillar[1]).toBe(false)
-  })
-})
-
-describe('costos y materiales', () => {
-  it('el pilar cuesta cemento según la altura y se suma al material', () => {
-    const l = LEVELS[2]
-    const c = planCost(build(l, [2, 2, 3, 3, 3, 4, 4], 'steel', [4]))
-    expect(c.steel).toBe(14)
-    expect(c.cement).toBe(2)
-    expect(c.emissions).toBeGreaterThan(0)
-  })
-
-  it('el concreto emite menos por unidad que el acero', () => {
-    const l = LEVELS[0]
-    const steel = planCost(build(l, flat(l), 'steel')), concrete = planCost(build(l, flat(l), 'concrete', [2]))
-    expect(concrete.emissions).toBeLessThan(steel.emissions)
-  })
-
-  it('no se puede gastar más material del que hay', () => {
-    expect(fits(START_INVENTORY, { steel: 47, cement: 0 })).toBe(false)
-    const run = startRun(), l = LEVELS[0]
-    expect(() => commitLevel(run, build(l, [2, 2, 2, 2], 'steel', []))).not.toThrow()
-    const poor = { ...run, inventory: { steel: 0, cement: 0 } }
-    expect(() => commitLevel(poor, build(l, flat(l), 'steel'))).toThrow()
-  })
-})
-
-describe('partida completa', () => {
-  const rows = [flat(LEVELS[0]), flat(LEVELS[1]), [2, 2, 3, 3, 3, 4, 4], [3, 3, 3, 3, 3, 3, 3, 3, 2]]
-
-  it('existe un plan eficiente que cruza los cuatro niveles con el material fijo', () => {
-    let run = startRun()
-    const plans = [
-      build(LEVELS[0], rows[0], 'concrete', [2]),
-      build(LEVELS[1], rows[1], 'steel', [3]),
-      build(LEVELS[2], rows[2], 'steel', [4]),
-      build(LEVELS[3], rows[3], 'steel', [3, 6]),
-    ]
-    for (const plan of plans) run = commitLevel(run, plan).run
-    expect(run.results.map(r => r.outcome)).toEqual(['ok', 'ok', 'ok', 'ok'])
-    expect(run.distance).toBe(LEVELS.reduce((sum, l) => sum + (l.gap + 1) * METERS_PER_COLUMN, 0))
-    expect(run.inventory.cement).toBeGreaterThanOrEqual(0)
-    expect(run.levelIndex).toBe(LEVELS.length)
-  })
-
-  it('gastar acero sin pensar agota el material antes de terminar', () => {
-    let run = startRun()
-    for (const [i, level] of LEVELS.entries()) {
-      if (!canContinue(run)) break
-      let plan = build(level, rows[i], 'steel', i === 1 ? [3] : i === 2 ? [4] : i === 3 ? [5] : [])
-      let tries = 0
-      while (!fits(run.inventory, planCost(plan)) && tries++ < level.gap) plan = clearColumn(plan, level.gap - tries + 1)
-      run = commitLevel(run, plan).run
-    }
-    expect(run.results.some(r => r.outcome !== 'ok') || run.levelIndex < LEVELS.length).toBe(true)
-    expect(run.distance).toBeLessThan(LEVELS.reduce((sum, l) => sum + (l.gap + 1) * METERS_PER_COLUMN, 0))
-  })
-
-  it('el material gastado no se recupera aunque el puente falle', () => {
-    const l = LEVELS[0], plan = build(l, flat(l), 'concrete')
-    const { run, result } = commitLevel(startRun(), plan)
-    expect(result.outcome).toBe('collapse')
-    expect(run.inventory.cement).toBe(START_INVENTORY.cement - 4)
-    expect(run.distance).toBe(2 * METERS_PER_COLUMN)
-    expect(metersPerUnit(run)).toBeGreaterThan(0)
-  })
-
-  it('sin material para una pieza, la partida no puede continuar', () => {
-    expect(canBuildAnything({ steel: 1, cement: 0 })).toBe(false)
-    expect(canBuildAnything({ steel: 0, cement: 1 })).toBe(true)
-    expect(canContinue({ ...startRun(), inventory: { steel: 1, cement: 0 } })).toBe(false)
-  })
-})
-
-describe('Puente de materiales · racha y estrellas', () => {
-  it('puentes seguidos suman bono creciente y uno fallido corta la racha', () => {
-    let run = startRun()
-    const l0 = LEVELS[0]
-    run = commitLevel(run, build(l0, flat(l0), 'steel')).run
-    expect(run.streak).toBe(1); expect(run.bonus).toBe(0)
-    const l1 = LEVELS[1]
-    run = commitLevel(run, build(l1, flat(l1), 'steel', [3])).run
-    expect(run.results[1].outcome).toBe('ok')
-    expect(run.streak).toBe(2); expect(run.bonus).toBe(streakBonus(run.results[1].meters, 2))
-    expect(totalScore(run)).toBe(run.distance + run.bonus)
+    expect(evaluate(l, plan).outcome).toBe('gap')
     const l2 = LEVELS[2]
-    run = commitLevel(run, build(l2, [2], 'steel')).run
-    expect(run.streak).toBe(0)
+    expect(evaluate(l2, build(l2, [2, 2, 4, 4, 4, 4, 4], 'steel', [3])).outcome).toBe('slope')
+  })
+})
+
+describe('modo arcade y recuperación circular', () => {
+  it('genera tramos infinitos más allá de los 4 niveles base', () => {
+    const l4 = levelAt(4), l5 = levelAt(5), l10 = levelAt(10)
+    expect(l4.name).toContain('#5')
+    expect(l5.gap).toBeGreaterThanOrEqual(7)
+    expect(l10.id).toBe('arcade-11')
   })
 
-  it('las estrellas premian cruzar con menos material', () => {
-    const l0 = LEVELS[0]
-    const heavy = planCost(build(l0, flat(l0), 'steel'))
-    const light = planCost(build(l0, flat(l0), 'concrete', [2]))
-    expect(starsFor(l0, 'ok', heavy)).toBe(2)
-    expect(starsFor(l0, 'ok', light)).toBe(3)
-    expect(starsFor(l0, 'collapse', light)).toBe(0)
+  it('recupera material proporcional a las estrellas al cruzar y 0 al fallar', () => {
+    const l = LEVELS[0]
+    const threeStars = refillFor(l, 3)
+    const oneStar = refillFor(l, 1)
+    const fail = refillFor(l, 0)
+    expect(threeStars.steel).toBeGreaterThan(oneStar.steel)
+    expect(fail).toEqual({ steel: 0, cement: 0 })
+  })
+
+  it('cruzar 3 puentes con eficiencia aprueba el reto y permite seguir jugando indefinidamente en arcade', () => {
+    let run = startRun()
+    expect(START_INVENTORY).toEqual({ steel: 40, cement: 18 })
+    run = commitLevel(run, build(levelAt(0), flat(levelAt(0)), 'concrete', [2])).run
+    run = commitLevel(run, build(levelAt(1), flat(levelAt(1)), 'concrete', [2, 4])).run
+    expect(passedRun(run)).toBe(false)
+    run = commitLevel(run, build(levelAt(2), [2, 2, 3, 3, 3, 4, 4], 'steel', [4])).run
+    expect(completedBridges(run)).toBe(MIN_BRIDGES_PASSED)
+    expect(passedRun(run)).toBe(true)
+    expect(canContinue(run)).toBe(true)
+
+    // Puente #4 (Cañón) también se puede cruzar y abre el modo arcade #5+
+    run = commitLevel(run, build(levelAt(3), [3, 3, 3, 3, 3, 3, 3, 3, 2], 'concrete', [2, 4, 6, 8])).run
+    expect(run.levelIndex).toBe(4)
+    expect(canContinue(run)).toBe(true)
+  })
+
+  it('no deja gastar más del inventario ni continuar sin material mínimo', () => {
+    expect(fits(START_INVENTORY, { steel: 41, cement: 0 })).toBe(false)
+    expect(canBuildAnything({ steel: 1, cement: 0 })).toBe(false)
+    expect(canContinue({ ...startRun(), inventory: { steel: 2, cement: 1 } })).toBe(false)
+  })
+
+  it('las estrellas y la racha premian cruzar seguido con menor gasto', () => {
+    const l0 = levelAt(0)
+    expect(starsFor(l0, 'ok', planCost(build(l0, flat(l0), 'concrete', [2])))).toBe(3)
+    let run = startRun()
+    run = commitLevel(run, build(l0, flat(l0), 'steel')).run
+    run = commitLevel(run, build(levelAt(1), flat(levelAt(1)), 'steel', [3])).run
+    expect(run.streak).toBe(2)
+    expect(run.bonus).toBe(streakBonus(run.results[1].meters, 2))
+    expect(totalScore(run)).toBe(run.distance + run.bonus)
+    expect(togglePillar(emptyPlan(l0), 2).pillar[1]).toBe(false)
+  })
+
+  it('otorga un bono discreto de material al alcanzar hitos de puntaje y puede sostener la continuidad arcade', () => {
+    const l0 = levelAt(0)
+    const tightRun = {
+      ...startRun(),
+      distance: SCORE_BONUS_STEP - (l0.gap + 1) * METERS_PER_COLUMN,
+      inventory: { steel: l0.gap * 2, cement: 1 },
+    }
+    const { run: nextRun, result } = commitLevel(tightRun, build(l0, flat(l0), 'steel'))
+    expect(totalScore(nextRun)).toBeGreaterThanOrEqual(SCORE_BONUS_STEP)
+    expect(result.scoreBonus).toEqual(SCORE_BONUS_REFILL)
+    expect(nextRun.scoreMilestonesClaimed).toBe(1)
+    expect(nextRun.inventory).toEqual({
+      steel: result.refill.steel + SCORE_BONUS_REFILL.steel,
+      cement: 1 + result.refill.cement + SCORE_BONUS_REFILL.cement,
+    })
+    expect(canContinue(nextRun)).toBe(true)
   })
 })

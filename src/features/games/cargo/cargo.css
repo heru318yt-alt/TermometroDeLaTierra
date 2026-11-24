@@ -1,4 +1,8 @@
-.cargo-stage canvas { cursor: crosshair; }
+.cargo-stage canvas { cursor: default; touch-action: none; }
+.cargo-stage canvas.is-grab { cursor: grab; }
+.cargo-stage canvas.is-grabbing { cursor: grabbing; }
+.cargo-mode-profile { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 11px; background: #0002; border: 1px solid var(--g-line); border-left: 3px solid var(--mode); border-radius: 7px; font-size: .74rem; color: var(--g-text); }
+.cargo-mode-badge { padding: 1px 7px; border-radius: 4px; background: color-mix(in srgb, var(--mode) 26%, #000); border: 1px solid color-mix(in srgb, var(--mode) 70%, transparent); color: #fff; font-family: var(--font-mono); font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 .cargo-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: stretch; }
 @media (max-width: 760px) { .cargo-controls { grid-template-columns: 1fr; } }
 .cargo-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

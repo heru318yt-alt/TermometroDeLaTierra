@@ -1,6 +1,8 @@
 import { useRef } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { PageIntro } from '../../components/PageIntro'
+import { playSfx } from '../audio/sfx'
+import { prefersReducedMotion } from '../games/shared/hooks'
 import { factors } from './catalog'
 import { FactorIllustration } from './FactorIllustration'
 
@@ -18,10 +20,10 @@ export function FactorsPage() {
   }
 
   function onKey(event: React.KeyboardEvent, i: number) {
-    if (event.key === 'ArrowRight') { event.preventDefault(); choose(i + 1, true) }
-    else if (event.key === 'ArrowLeft') { event.preventDefault(); choose(i - 1, true) }
-    else if (event.key === 'Home') { event.preventDefault(); choose(0, true) }
-    else if (event.key === 'End') { event.preventDefault(); choose(factors.length - 1, true) }
+    if (event.key === 'ArrowRight') { event.preventDefault(); playSfx('toggle'); choose(i + 1, true) }
+    else if (event.key === 'ArrowLeft') { event.preventDefault(); playSfx('toggle'); choose(i - 1, true) }
+    else if (event.key === 'Home') { event.preventDefault(); playSfx('toggle'); choose(0, true) }
+    else if (event.key === 'End') { event.preventDefault(); playSfx('toggle'); choose(factors.length - 1, true) }
   }
 
   const next = factors[(index + 1) % factors.length]
@@ -34,7 +36,7 @@ export function FactorsPage() {
     <div className="factor-index" role="tablist" aria-label="Los cinco factores">
       {factors.map((f, i) => <button key={f.id} ref={el => { tabs.current[i] = el }} type="button" role="tab" id={`factor-tab-${f.id}`}
         aria-selected={i === index} aria-controls="factor-panel" tabIndex={i === index ? 0 : -1} data-sfx="toggle"
-        className={i === index ? 'is-active' : undefined} onClick={() => choose(i)} onKeyDown={event => onKey(event, i)}>
+        className={`factor-tab-${f.id}${i === index ? ' is-active' : ''}`} onClick={() => choose(i)} onKeyDown={event => onKey(event, i)}>
         <span>{f.number}</span><strong>{f.title}</strong>
       </button>)}
     </div>
@@ -66,7 +68,7 @@ export function FactorsPage() {
           <ul>{factor.levers.map(lever => <li key={lever}>{lever}</li>)}</ul>
         </div>
         <div className="factor-sources"><span>Fuentes</span>{factor.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label} ↗</a>)}</div>
-        <button type="button" className="factor-next" onClick={() => { choose(index + 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Siguiente: {next.title} <span aria-hidden="true">→</span></button>
+        <button type="button" className="factor-next" onClick={() => { choose(index + 1); window.scrollTo?.({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }) }}>Siguiente: {next.title} <span aria-hidden="true">→</span></button>
       </div>
     </section>
 

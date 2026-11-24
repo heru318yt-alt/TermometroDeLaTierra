@@ -1,4 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { playSfx } from '../../audio/sfx'
+import { AchievementToast } from '../AchievementToast'
+import { setNativeFullscreenHost } from '../achievements'
 import './game-shell.css'
 
 type FullscreenMode = 'off' | 'native' | 'expanded'
@@ -23,6 +26,11 @@ export function GameFrame({ world, title, children }: { world: string; title: st
   const active = mode !== 'off'
 
   useEffect(() => {
+    setNativeFullscreenHost(mode === 'native')
+    return () => setNativeFullscreenHost(false)
+  }, [mode])
+
+  useEffect(() => {
     const onChange = () => {
       if (document.fullscreenElement === root.current) setMode('native')
       else setMode(current => current === 'native' ? 'off' : current)
@@ -31,10 +39,31 @@ export function GameFrame({ world, title, children }: { world: string; title: st
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
 
-  // Modo expandido: Esc para salir y sin scroll de la página de fondo.
+  // Modo expandido: Esc para salir, trampa de foco y sin scroll de la página de fondo.
   useEffect(() => {
     if (mode !== 'expanded') return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMode('off') }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        playSfx('click')
+        setMode('off')
+        return
+      }
+      if (event.key === 'Tab' && root.current) {
+        const focusables = root.current.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])'
+        )
+        if (!focusables.length) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+    }
     const html = document.documentElement, body = document.body
     const previousHtml = html.style.overflow, previousBody = body.style.overflow, previousGutter = html.style.scrollbarGutter
     html.style.overflow = 'hidden'
@@ -94,6 +123,7 @@ export function GameFrame({ world, title, children }: { world: string; title: st
         </button>
       </div>
       <div className="gf-body">{children}</div>
+      {mode === 'native' && <AchievementToast />}
     </div>
   </FullscreenContext.Provider>
 }

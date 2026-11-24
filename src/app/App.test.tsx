@@ -36,6 +36,7 @@ describe('Recorrido de la aplicación', () => {
     ['/', 'El clima cambia.'], ['/explorador', 'Explorador climático'],
     ['/linea-del-tiempo', 'Línea del tiempo'], ['/historia', 'El clima, a través del tiempo.'],
     ['/factores', 'Factores del cambio climático'], ['/minijuegos', 'Aprender también es jugar.'],
+    ['/logros', 'Logros del observatorio'],
     ['/fuentes', 'Fuentes y metodología'], ['/acerca', 'Comprender para participar.'],
     ['/ruta-inexistente', 'Esta coordenada no existe.'],
   ])('resuelve la ruta %s', (path, title) => {
@@ -136,7 +137,7 @@ describe('Recorrido de la aplicación', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Mantén la red' })).toBeTruthy()
     expect(screen.getByText('Misión 01 · Mantén la red')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Marcar reto completado' }))
-    expect(screen.getByText(/Se abrió 1990–1999: Puente de materiales/)).toBeTruthy()
+    expect(screen.getAllByText(/Se abrió 1990–1999: Puente de materiales/).length).toBeGreaterThanOrEqual(1)
     expect(within(route()).getByRole('button', { name: /1990–1999. Puente de materiales. Disponible/ })).toBeTruthy()
   })
   it('restaura la aventura al abrir o recargar un enlace individual', () => {
@@ -147,13 +148,112 @@ describe('Recorrido de la aplicación', () => {
     expect(screen.getByText('Misión 04 · Guardabosques')).toBeTruthy()
     expect(screen.getByRole('heading', { level: 2, name: 'Guardabosques' })).toBeTruthy()
   })
-  it('abre cada mundo del atlas principal con su identificador', () => {
+  it('abre cada mundo del atlas principal con su identificador sin imágenes rasterizadas', () => {
     setup('/')
+    expect(document.querySelector('.atlas-svg image')).toBeNull()
     const links = screen.getAllByRole('link', { name: /^Explorar / })
     expect(links).toHaveLength(5)
     for (const id of ['energia', 'industria', 'transporte', 'bosques', 'agricultura']) {
       const link = links.find(candidate => candidate.getAttribute('href')?.includes(`world=${id}`))
       expect(link?.getAttribute('href')).toContain(`world=${id}`)
     }
+  })
+  it('muestra el progreso del atlas y el estado ordenado de sus etapas', () => {
+    completeEpoch('energia')
+    completeEpoch('industria')
+    setup('/')
+    expect(document.querySelector('.home-worlds')).toBeNull()
+    expect(screen.getByText('2 / 5 COMPLETADAS')).toBeTruthy()
+    expect(screen.getByText('ÍNDICE DE CAMPO · 2/5')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Explorar Mantén la red\. Etapa completada/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Explorar Carga entre ciudades\. Etapa disponible/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Explorar Guardabosques\. Etapa bloqueada/ })).toBeTruthy()
+  })
+  it('actualiza la lámina ilustrada minimalista y animada en /factores sin imágenes rasterizadas', async () => {
+    setup('/factores')
+    const svgEnergia = screen.getByRole('img', { name: /Ilustración editorial del factor Energía y combustibles fósiles/ })
+    expect(svgEnergia.tagName.toLowerCase()).toBe('svg')
+    expect(svgEnergia.querySelector('image')).toBeNull()
+    expect(svgEnergia.querySelector('.factor-scene-energia')).toBeTruthy()
+    expect(svgEnergia.querySelectorAll('.art-rotor').length).toBeGreaterThanOrEqual(3)
+    expect(svgEnergia.querySelectorAll('.art-dash').length).toBeGreaterThanOrEqual(1)
+    expect(svgEnergia.querySelectorAll('.art-ripple').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('link', { name: /Probar este factor en su minijuego/ }).getAttribute('href')).toContain('world=energia')
+
+    await userEvent.click(screen.getByRole('tab', { name: /Industria y materiales/ }))
+    const svgIndustria = screen.getByRole('img', { name: /Ilustración editorial del factor Industria y materiales/ })
+    expect(svgIndustria.querySelector('.factor-scene-industria')).toBeTruthy()
+    expect(svgIndustria.querySelectorAll('.art-smoke').length).toBeGreaterThanOrEqual(2)
+    expect(svgIndustria.querySelectorAll('.art-rotor').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('link', { name: /Probar este factor en su minijuego/ }).getAttribute('href')).toContain('world=industria')
+
+    await userEvent.click(screen.getByRole('tab', { name: /Transporte y movilidad/ }))
+    const svgTransporte = screen.getByRole('img', { name: /Ilustración editorial del factor Transporte y movilidad/ })
+    expect(svgTransporte.querySelector('.factor-scene-transporte')).toBeTruthy()
+    expect(svgTransporte.querySelectorAll('.art-vehicle').length).toBeGreaterThanOrEqual(2)
+    expect(svgTransporte.querySelectorAll('.art-dash').length).toBeGreaterThanOrEqual(2)
+    expect(svgTransporte.querySelectorAll('.art-ripple').length).toBeGreaterThanOrEqual(1)
+
+    await userEvent.click(screen.getByRole('tab', { name: /Deforestación y cambio de uso del suelo/ }))
+    const svgBosques = screen.getByRole('img', { name: /Ilustración editorial del factor Deforestación y cambio de uso del suelo/ })
+    expect(svgBosques.querySelector('.factor-scene-bosques')).toBeTruthy()
+    expect(svgBosques.querySelectorAll('.art-sway').length).toBeGreaterThanOrEqual(4)
+    expect(svgBosques.querySelectorAll('.art-pulse').length).toBeGreaterThanOrEqual(3)
+
+    await userEvent.click(screen.getByRole('tab', { name: /Agricultura, ganadería y otros gases/ }))
+    const svgAgricultura = screen.getByRole('img', { name: /Ilustración editorial del factor Agricultura, ganadería y otros gases/ })
+    expect(svgAgricultura.querySelector('.factor-scene-agricultura')).toBeTruthy()
+    expect(svgAgricultura.querySelectorAll('.art-ripple').length).toBeGreaterThanOrEqual(2)
+    expect(svgAgricultura.querySelectorAll('.art-dash').length).toBeGreaterThanOrEqual(1)
+  })
+  it('muestra notificación de logro al completar una etapa y permite navegar directo a /logros', async () => {
+    setup('/minijuegos?world=energia')
+    expect(document.querySelector('.header-achievements')?.getAttribute('href')).toBe('/logros')
+    expect(document.querySelector('.games-logros-cta')?.getAttribute('href')).toBe('/logros')
+    await userEvent.click(screen.getByRole('button', { name: 'Marcar reto completado' }))
+    const toastBtn = screen.getByRole('button', { name: /Guardián de la Red/ })
+    expect(toastBtn).toBeTruthy()
+    await userEvent.click(toastBtn)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Logros del observatorio')
+    expect(screen.getByText('1 / 6')).toBeTruthy()
+  })
+  it('otorga el título de Protector Ambiental con enlace a /logros al completar los 5 retos', async () => {
+    completeEpoch('energia')
+    completeEpoch('industria')
+    completeEpoch('transporte')
+    completeEpoch('bosques')
+    setup('/minijuegos?world=agricultura')
+    await userEvent.click(screen.getByRole('button', { name: 'Marcar reto completado' }))
+    const celebration = screen.getByRole('dialog', { name: 'Protector Ambiental' })
+    expect(celebration.textContent).toContain('5 DE 5 RETOS COMPLETADOS')
+    expect(within(celebration).getByRole('link', { name: /Ver mis logros/ }).getAttribute('href')).toBe('/logros')
+    await userEvent.click(within(celebration).getByRole('link', { name: /Ver mis logros/ }))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Logros del observatorio')
+    expect(screen.getByText('6 / 6')).toBeTruthy()
+  })
+  it('abre automáticamente el diploma de Protector Ambiental al entrar con 5/5 por primera vez', async () => {
+    completeEpoch('energia')
+    completeEpoch('industria')
+    completeEpoch('transporte')
+    completeEpoch('bosques')
+    completeEpoch('agricultura')
+    const view = setup('/minijuegos')
+    expect(screen.getByRole('dialog', { name: 'Protector Ambiental' })).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: /Seguir explorando/ }))
+    view.unmount()
+    setup('/minijuegos')
+    expect(screen.queryByRole('dialog', { name: 'Protector Ambiental' })).toBeNull()
+    expect(screen.getByRole('button', { name: /Ver diploma y celebración/ })).toBeTruthy()
+  })
+  it('abre automáticamente el bloque de metodología en /fuentes y muestra la guía del curso en /acerca', async () => {
+    const view = setup('/fuentes')
+    const details = document.getElementById('metodologia') as HTMLDetailsElement
+    expect(details.open).toBe(false)
+    await userEvent.click(screen.getByRole('link', { name: /02.*Metodología/ }))
+    expect(details.open).toBe(true)
+    view.unmount()
+
+    setup('/acerca')
+    expect(document.body.textContent).toContain('De NASA GISTEMP a React')
   })
 })

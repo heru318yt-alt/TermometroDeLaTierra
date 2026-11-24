@@ -40,7 +40,7 @@ export function AboutPage() {
         <a className="source-link" href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer"><strong>NASA GISS · GISTEMP <span aria-hidden="true">↗</span></strong><span>Fuente de la serie global de anomalías respecto a 1951–1980. La fecha de descarga está disponible en el explorador.</span></a>
         <p className="muted">GISTEMP Team: GISS Surface Temperature Analysis, versión 4. NASA GISS. Descarga: {summary.downloadedAt.slice(0, 10)}.</p>
         <a className="source-link" href="https://doi.org/10.1029/2023JD040179" target="_blank" rel="noreferrer"><strong>Lenssen et al. (2024) <span aria-hidden="true">↗</span></strong><span>A GISTEMPv4 observational uncertainty ensemble. Journal of Geophysical Research: Atmospheres, 129.</span></a>
-        <a className="source-link" href="https://temperatura-mu.vercel.app/" target="_blank" rel="noreferrer"><strong>Referencia de la asignatura <span aria-hidden="true">↗</span></strong><span>Recurso proporcionado por el profesor. No se pudo verificar su contenido durante esta implementación; no se ha copiado su código.</span></a>
+        <a className="source-link" href="https://temperatura-mu.vercel.app/#step-2" target="_blank" rel="noreferrer"><strong>De NASA GISTEMP a React · Referencia de la asignatura <span aria-hidden="true">↗</span></strong><span>Guía del curso Arquitectura de Sistemas Multimedia (UAO) sobre el archivo GLB.Ts+dSST.csv, escala 1951–1980 vs. 1880–1900 y sonificación con Web Audio API. Esta aplicación tiene implementación propia y no copia su código.</span></a>
         <Link className="text-link" to="/fuentes">Ver las diez fuentes y la metodología completa →</Link>
       </section>
     </div>
